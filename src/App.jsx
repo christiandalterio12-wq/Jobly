@@ -12,12 +12,9 @@ import {
   Bookmark,
   Wand2,
   Briefcase,
-  PenSquare,
-  Download,
+  Trash2,
   Save,
   LogOut,
-  Plus,
-  Trash2,
   Mail,
   Lock,
   Eye,
@@ -41,6 +38,131 @@ const STORAGE_KEYS = {
   cvData: "jobly_cv_data",
 };
 
+const locationData = {
+  Lombardia: {
+    Milano: {
+      Milano: [
+        "Centro",
+        "Barona",
+        "Quarto Oggiaro",
+        "Bovisa",
+        "Affori",
+        "Niguarda",
+        "Bicocca",
+        "Isola",
+        "Porta Romana",
+        "Porta Venezia",
+        "CityLife",
+        "San Siro",
+        "Lambrate",
+        "Città Studi",
+        "Navigli",
+        "Corvetto",
+        "Brera",
+        "Garibaldi",
+        "Loreto",
+        "NoLo",
+        "Precotto",
+        "Baggio",
+        "Giambellino",
+        "Rogoredo",
+        "Forlanini",
+        "Porta Genova",
+      ],
+      "Novate Milanese": [],
+      Bollate: [],
+      "Sesto San Giovanni": [],
+      "Cinisello Balsamo": [],
+      "Cusano Milanino": [],
+      Bresso: [],
+      Cormano: [],
+      "Paderno Dugnano": [],
+      Senago: [],
+      Limbiate: [],
+      Rho: [],
+      "Garbagnate Milanese": [],
+      "Cesano Maderno": [],
+      Segrate: [],
+      Pioltello: [],
+      Rozzano: [],
+      Assago: [],
+    },
+    Bergamo: {
+      Bergamo: ["Centro", "Città Alta", "Città Bassa"],
+      Treviglio: [],
+      Seriate: [],
+    },
+    Monza: {
+      Monza: ["Centro", "San Biagio", "Triante"],
+      Brugherio: [],
+      Desio: [],
+    },
+  },
+  Lazio: {
+    Roma: {
+      Roma: [
+        "Centro Storico",
+        "EUR",
+        "Trastevere",
+        "Ostiense",
+        "San Lorenzo",
+        "Tiburtina",
+        "Prati",
+        "Monteverde",
+      ],
+      Fiumicino: [],
+      Tivoli: [],
+      Guidonia: [],
+    },
+  },
+  Piemonte: {
+    Torino: {
+      Torino: ["Centro", "Lingotto", "San Salvario", "Crocetta", "Aurora"],
+      Moncalieri: [],
+      Rivoli: [],
+    },
+  },
+  Veneto: {
+    Venezia: {
+      Venezia: ["Mestre", "Marghera", "Centro Storico"],
+      Spinea: [],
+      Mirano: [],
+    },
+    Verona: {
+      Verona: ["Centro", "Borgo Roma", "Borgo Trento"],
+      Villafranca: [],
+    },
+  },
+  Emilia-Romagna: {
+    Bologna: {
+      Bologna: ["Centro", "San Donato", "Navile", "Saragozza"],
+      Imola: [],
+      Casalecchio: [],
+    },
+  },
+  Campania: {
+    Napoli: {
+      Napoli: ["Centro", "Vomero", "Fuorigrotta", "Posillipo", "Chiaia"],
+      Pozzuoli: [],
+      Casoria: [],
+    },
+  },
+  Toscana: {
+    Firenze: {
+      Firenze: ["Centro", "Novoli", "Campo di Marte", "Isolotto"],
+      Sesto Fiorentino: [],
+      Scandicci: [],
+    },
+  },
+  Sicilia: {
+    Palermo: {
+      Palermo: ["Centro", "Mondello", "Notarbartolo", "Politeama"],
+      Bagheria: [],
+      Monreale: [],
+    },
+  },
+};
+
 const defaultProfile = {
   name: "Christian D.",
   role: "Back Office / Order Management / Customer Support",
@@ -55,7 +177,9 @@ const defaultOffers = [
     id: 1,
     title: "Back Office Commerciale",
     company: "Adecco",
-    city: "Milano",
+    region: "Lombardia",
+    province: "Milano",
+    comune: "Milano",
     zone: "Bovisa",
     distance: 6,
     contract: "Tempo indeterminato",
@@ -69,8 +193,10 @@ const defaultOffers = [
     id: 2,
     title: "Customer Care Specialist",
     company: "Randstad",
-    city: "Milano",
-    zone: "Porta Garibaldi",
+    region: "Lombardia",
+    province: "Milano",
+    comune: "Milano",
+    zone: "Porta Venezia",
     distance: 9,
     contract: "Tempo determinato",
     salary: "24K-27K",
@@ -83,8 +209,10 @@ const defaultOffers = [
     id: 3,
     title: "Order Management Specialist",
     company: "DHL",
-    city: "Segrate",
-    zone: "Centro Direzionale",
+    region: "Lombardia",
+    province: "Milano",
+    comune: "Segrate",
+    zone: "",
     distance: 14,
     contract: "Tempo indeterminato",
     salary: "30K-34K",
@@ -97,14 +225,80 @@ const defaultOffers = [
     id: 4,
     title: "Magazziniere",
     company: "Amazon",
-    city: "Pioltello",
-    zone: "Hub Est",
+    region: "Lombardia",
+    province: "Milano",
+    comune: "Pioltello",
+    zone: "",
     distance: 18,
     contract: "Somministrazione",
     salary: "22K-25K",
     remote: "On-site",
     category: "Logistica",
     match: 75,
+    urgent: false,
+  },
+  {
+    id: 5,
+    title: "Impiegato Ufficio Acquisti",
+    company: "Gi Group",
+    region: "Lombardia",
+    province: "Milano",
+    comune: "Novate Milanese",
+    zone: "",
+    distance: 11,
+    contract: "Tempo indeterminato",
+    salary: "27K-30K",
+    remote: "On-site",
+    category: "Acquisti",
+    match: 79,
+    urgent: false,
+  },
+  {
+    id: 6,
+    title: "Help Desk IT",
+    company: "Sielte",
+    region: "Lombardia",
+    province: "Milano",
+    comune: "Milano",
+    zone: "Loreto",
+    distance: 8,
+    contract: "Tempo indeterminato",
+    salary: "27K-31K",
+    remote: "Ibrido",
+    category: "IT",
+    match: 88,
+    urgent: false,
+  },
+  {
+    id: 7,
+    title: "Addetto Customer Support",
+    company: "Manpower",
+    region: "Lazio",
+    province: "Roma",
+    comune: "Roma",
+    zone: "EUR",
+    distance: 7,
+    contract: "Tempo determinato",
+    salary: "25K-28K",
+    remote: "Ibrido",
+    category: "Customer Service",
+    match: 73,
+    urgent: false,
+  },
+  {
+    id: 8,
+    title: "Back Office Logistico",
+    company: "Page Personnel",
+    region: "Piemonte",
+    province: "Torino",
+    comune: "Torino",
+    zone: "Lingotto",
+    distance: 5,
+    contract: "Tempo indeterminato",
+    salary: "29K-33K",
+    remote: "Ibrido",
+    category: "Logistica",
+    match: 77,
     urgent: false,
   },
 ];
@@ -136,7 +330,7 @@ const defaultAuthSession = {
 const defaultChat = [
   {
     who: "ai",
-    text: "Ciao, sono l’assistente Jobly. Posso aiutarti a filtrare offerte, migliorare il CV e organizzare le candidature.",
+    text: "Ciao, sono l’assistente Jobly. Posso aiutarti a filtrare offerte, migliorare il profilo e organizzare le candidature.",
   },
 ];
 
@@ -202,7 +396,8 @@ function OfferCard({ offer, saved, onSave, onApply, onGoCV }) {
             <span className="dot">•</span>
             <MapPin size={15} />
             <span>
-              {offer.city}, {offer.zone}
+              {offer.comune}
+              {offer.zone ? `, ${offer.zone}` : ""}
             </span>
           </div>
         </div>
@@ -218,6 +413,7 @@ function OfferCard({ offer, saved, onSave, onApply, onGoCV }) {
         <Badge>{offer.salary}</Badge>
         <Badge>{offer.remote}</Badge>
         <Badge>{offer.distance} km</Badge>
+        <Badge>{offer.region}</Badge>
       </div>
 
       <div className="actions">
@@ -254,7 +450,7 @@ function AuthScreen({
 }) {
   return (
     <div className={`app-shell ${theme === "dark" ? "theme-dark" : "theme-light"}`}>
-      <div className="main-container" style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24 }}>
+      <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24 }}>
         <div style={{ width: "100%", maxWidth: 1100, display: "grid", gap: 24 }} className="auth-grid">
           <Card className="hero-left">
             <div className="hero-glow" />
@@ -423,7 +619,7 @@ export default function App() {
   const [tab, setTab] = useState(() => readStorage(STORAGE_KEYS.activeTab, "offerte"));
 
   const [profile, setProfile] = useState(() => readStorage(STORAGE_KEYS.profile, defaultProfile));
-  const [offers, setOffers] = useState(() => readStorage(STORAGE_KEYS.offers, defaultOffers));
+  const [offers] = useState(() => readStorage(STORAGE_KEYS.offers, defaultOffers));
   const [savedIds, setSavedIds] = useState(() => readStorage(STORAGE_KEYS.savedIds, [1]));
   const [applications, setApplications] = useState(() => readStorage(STORAGE_KEYS.applications, defaultApplications));
   const [notifications, setNotifications] = useState(() => readStorage(STORAGE_KEYS.notifications, defaultNotifications));
@@ -433,7 +629,10 @@ export default function App() {
   const [cvData, setCvData] = useState(() => readStorage(STORAGE_KEYS.cvData, defaultCvData));
 
   const [search, setSearch] = useState("");
-  const [city, setCity] = useState("all");
+  const [region, setRegion] = useState("all");
+  const [province, setProvince] = useState("all");
+  const [comune, setComune] = useState("all");
+  const [zone, setZone] = useState("all");
   const [contract, setContract] = useState("all");
   const [maxDistance, setMaxDistance] = useState("30");
 
@@ -451,29 +650,6 @@ export default function App() {
     confirmPassword: "",
   });
 
-  const filteredOffers = useMemo(() => {
-    return offers.filter((o) => {
-      const okSearch =
-        !search ||
-        [o.title, o.company, o.city, o.zone, o.category].join(" ").toLowerCase().includes(search.toLowerCase());
-      const okCity = city === "all" || o.city === city;
-      const okContract = contract === "all" || o.contract === contract;
-      const okDistance = o.distance <= Number(maxDistance);
-      return okSearch && okCity && okContract && okDistance;
-    });
-  }, [offers, search, city, contract, maxDistance]);
-
-  const profileCompletion = useMemo(() => {
-    let score = 0;
-    if (profile.name) score += 20;
-    if (profile.role) score += 20;
-    if (profile.city) score += 20;
-    if (profile.bio) score += 20;
-    if (profile.skills) score += 10;
-    if (profile.cvName) score += 10;
-    return score;
-  }, [profile]);
-
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.theme, JSON.stringify(theme));
   }, [theme]);
@@ -485,10 +661,6 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.profile, JSON.stringify(profile));
   }, [profile]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.offers, JSON.stringify(offers));
-  }, [offers]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.savedIds, JSON.stringify(savedIds));
@@ -517,6 +689,73 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.cvData, JSON.stringify(cvData));
   }, [cvData]);
+
+  useEffect(() => {
+    setProvince("all");
+    setComune("all");
+    setZone("all");
+  }, [region]);
+
+  useEffect(() => {
+    setComune("all");
+    setZone("all");
+  }, [province]);
+
+  useEffect(() => {
+    setZone("all");
+  }, [comune]);
+
+  const regionOptions = useMemo(() => {
+    return ["all", ...Object.keys(locationData)];
+  }, []);
+
+  const provinceOptions = useMemo(() => {
+    if (region === "all" || !locationData[region]) return ["all"];
+    return ["all", ...Object.keys(locationData[region])];
+  }, [region]);
+
+  const comuneOptions = useMemo(() => {
+    if (region === "all" || province === "all") return ["all"];
+    const comuniMap = locationData[region]?.[province] || {};
+    return ["all", ...Object.keys(comuniMap)];
+  }, [region, province]);
+
+  const zoneOptions = useMemo(() => {
+    if (region === "all" || province === "all" || comune === "all") return ["all"];
+    const zones = locationData[region]?.[province]?.[comune] || [];
+    return ["all", ...zones];
+  }, [region, province, comune]);
+
+  const filteredOffers = useMemo(() => {
+    return offers.filter((o) => {
+      const okSearch =
+        !search ||
+        [o.title, o.company, o.region, o.province, o.comune, o.zone, o.category]
+          .join(" ")
+          .toLowerCase()
+          .includes(search.toLowerCase());
+
+      const okRegion = region === "all" || o.region === region;
+      const okProvince = province === "all" || o.province === province;
+      const okComune = comune === "all" || o.comune === comune;
+      const okZone = zone === "all" || o.zone === zone;
+      const okContract = contract === "all" || o.contract === contract;
+      const okDistance = o.distance <= Number(maxDistance);
+
+      return okSearch && okRegion && okProvince && okComune && okZone && okContract && okDistance;
+    });
+  }, [offers, search, region, province, comune, zone, contract, maxDistance]);
+
+  const profileCompletion = useMemo(() => {
+    let score = 0;
+    if (profile.name) score += 20;
+    if (profile.role) score += 20;
+    if (profile.city) score += 20;
+    if (profile.bio) score += 20;
+    if (profile.skills) score += 10;
+    if (profile.cvName) score += 10;
+    return score;
+  }, [profile]);
 
   const pulseSave = (message) => {
     setSaveFeedback(message);
@@ -584,7 +823,7 @@ export default function App() {
   const handleGoCV = (offer) => {
     setCvData((prev) => ({
       ...prev,
-      jobDescription: `${offer.title} presso ${offer.company}. Sede ${offer.city}, ${offer.zone}. Contratto ${offer.contract}. Modalità ${offer.remote}.`,
+      jobDescription: `${offer.title} presso ${offer.company}. Regione ${offer.region}, provincia ${offer.province}, comune ${offer.comune}${offer.zone ? `, zona ${offer.zone}` : ""}. Contratto ${offer.contract}. Modalità ${offer.remote}.`,
     }));
     setTab("ai");
     pulseSave("Descrizione offerta preparata per il CV");
@@ -596,7 +835,7 @@ export default function App() {
     const lower = userMsg.toLowerCase();
 
     let aiText = "Posso aiutarti a filtrare offerte, migliorare il profilo e organizzare le candidature.";
-    if (lower.includes("milano")) aiText = "Per Milano ti conviene mantenere filtro città su Milano e privilegiare ruoli back office o customer care.";
+    if (lower.includes("milano")) aiText = "Per Milano puoi usare anche il filtro zona: Quarto Oggiaro, Barona, Bovisa, San Siro, Loreto e altre.";
     if (lower.includes("cv")) aiText = "Per il CV evidenzia gestione ordini, SAP, assistenza clienti e precisione operativa.";
     if (lower.includes("candidature")) aiText = "Controlla la tab Candidature: lì puoi aggiornare stato o rimuovere candidature non utili.";
 
@@ -802,7 +1041,7 @@ export default function App() {
             <div className="chips">
               <Badge className="badge-red">Match intelligenti</Badge>
               <Badge>Filtri smart</Badge>
-              <Badge>Recruiter view</Badge>
+              <Badge>Ricerca Italia</Badge>
             </div>
           </div>
 
@@ -814,20 +1053,46 @@ export default function App() {
 
             <div className="search-line">
               <Search size={16} className="search-icon" />
-              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Ruolo, azienda, città..." />
+              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Ruolo, azienda, regione, città..." />
             </div>
 
             <div className="filters-grid">
               <SelectField
-                value={city}
-                onChange={setCity}
-                options={[
-                  { value: "all", label: "Tutte le città" },
-                  { value: "Milano", label: "Milano" },
-                  { value: "Segrate", label: "Segrate" },
-                  { value: "Pioltello", label: "Pioltello" },
-                ]}
+                value={region}
+                onChange={setRegion}
+                options={regionOptions.map((r) => ({
+                  value: r,
+                  label: r === "all" ? "Tutte le regioni" : r,
+                }))}
               />
+
+              <SelectField
+                value={province}
+                onChange={setProvince}
+                options={provinceOptions.map((p) => ({
+                  value: p,
+                  label: p === "all" ? "Tutte le province" : p,
+                }))}
+              />
+
+              <SelectField
+                value={comune}
+                onChange={setComune}
+                options={comuneOptions.map((c) => ({
+                  value: c,
+                  label: c === "all" ? "Tutti i comuni" : c,
+                }))}
+              />
+
+              <SelectField
+                value={zone}
+                onChange={setZone}
+                options={zoneOptions.map((z) => ({
+                  value: z,
+                  label: z === "all" ? "Tutte le zone" : z,
+                }))}
+              />
+
               <SelectField
                 value={contract}
                 onChange={setContract}
@@ -838,6 +1103,7 @@ export default function App() {
                   { value: "Somministrazione", label: "Somministrazione" },
                 ]}
               />
+
               <SelectField
                 value={maxDistance}
                 onChange={setMaxDistance}
@@ -891,30 +1157,28 @@ export default function App() {
 
         <main className="content">
           {tab === "offerte" && (
-            <>
-              <section>
-                <div className="section-head">
-                  <div>
-                    <h2>Offerte consigliate</h2>
-                    <p>Selezionate in base al tuo profilo e ai filtri attivi</p>
-                  </div>
-                  <div className="muted">{filteredOffers.length} risultati</div>
+            <section>
+              <div className="section-head">
+                <div>
+                  <h2>Offerte consigliate</h2>
+                  <p>Ricerca nazionale con filtro per regione, provincia, comune e zona</p>
                 </div>
+                <div className="muted">{filteredOffers.length} risultati</div>
+              </div>
 
-                <div className="offer-grid">
-                  {filteredOffers.map((offer) => (
-                    <OfferCard
-                      key={offer.id}
-                      offer={offer}
-                      saved={savedIds.includes(offer.id)}
-                      onSave={toggleSaveOffer}
-                      onApply={applyToOffer}
-                      onGoCV={handleGoCV}
-                    />
-                  ))}
-                </div>
-              </section>
-            </>
+              <div className="offer-grid">
+                {filteredOffers.map((offer) => (
+                  <OfferCard
+                    key={offer.id}
+                    offer={offer}
+                    saved={savedIds.includes(offer.id)}
+                    onSave={toggleSaveOffer}
+                    onApply={applyToOffer}
+                    onGoCV={handleGoCV}
+                  />
+                ))}
+              </div>
+            </section>
           )}
 
           {tab === "candidature" && (
@@ -1102,7 +1366,7 @@ export default function App() {
                   <div className="inner-box">
                     <div className="section-label">Suggerimento rapido</div>
                     <p className="meta-text small">
-                      Evidenzia gestione ordini, SAP, customer support e precisione operativa. Sono i punti più forti del profilo.
+                      Ora la ricerca è strutturata meglio: regione, provincia, comune e zona. Per Milano usa il filtro zona per risultati più utili.
                     </p>
                   </div>
                 </div>
@@ -1123,7 +1387,7 @@ export default function App() {
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && sendChat()}
-                    placeholder="Scrivi: aiutami con il CV o con le offerte"
+                    placeholder="Scrivi: cercami offerte a Milano zona Barona"
                   />
                   <Button className="btn-red" onClick={sendChat}>
                     <Send size={16} />
