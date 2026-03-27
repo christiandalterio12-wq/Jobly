@@ -1,31 +1,24 @@
-/* RESET BASE */
-html, body, #root {
+/* RESET */
+* {
   margin: 0;
   padding: 0;
-  min-height: 100%;
+  box-sizing: border-box;
 }
 
-/* TEMA GLOBALE */
-body.theme-dark {
-  background: #05070b;
-  color: #f5f7fb;
+body {
+  font-family: system-ui, Arial;
 }
 
-body.theme-light {
-  background: #f4f7fb;
-  color: #111827;
-}
-
-/* CONTENITORE APP */
+/* APP BASE */
 .app-shell {
   min-height: 100vh;
-  transition: all 0.25s ease;
+  padding: 20px;
 }
 
 /* DARK */
 .app-shell.theme-dark {
-  background: #05070b;
-  color: #f5f7fb;
+  background: #0b0f17;
+  color: #ffffff;
 }
 
 /* LIGHT */
@@ -34,70 +27,70 @@ body.theme-light {
   color: #111827;
 }
 
-/* CARD + BOX */
-.topbar,
-.card,
-.search-card,
-.inner-box,
-.tab,
-.preview-card {
-  transition: all 0.25s ease;
+/* HEADER */
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
 }
 
-/* DARK UI */
-.app-shell.theme-dark .topbar,
-.app-shell.theme-dark .card,
-.app-shell.theme-dark .search-card,
-.app-shell.theme-dark .inner-box,
-.app-shell.theme-dark .tab,
-.app-shell.theme-dark .preview-card {
-  background: #0f131b;
-  color: #f5f7fb;
-  border: 1px solid rgba(255,255,255,0.08);
-}
-
-/* LIGHT UI */
-.app-shell.theme-light .topbar,
-.app-shell.theme-light .card,
-.app-shell.theme-light .search-card,
-.app-shell.theme-light .inner-box,
-.app-shell.theme-light .tab,
-.app-shell.theme-light .preview-card {
-  background: #ffffff;
-  color: #111827;
-  border: 1px solid rgba(17,24,39,0.08);
-}
-
-/* TESTI SECONDARI */
-.app-shell.theme-dark .meta-text,
-.app-shell.theme-dark .muted,
-.app-shell.theme-dark .section-label {
-  color: #aeb6c7;
-}
-
-.app-shell.theme-light .meta-text,
-.app-shell.theme-light .muted,
-.app-shell.theme-light .section-label {
-  color: #5b6472;
-}
-
-/* BOTTONE TEMA */
-.theme-toggle {
-  border-radius: 12px;
-  padding: 8px 10px;
+/* BOTTONI */
+.btn {
+  padding: 10px 14px;
+  border-radius: 10px;
   cursor: pointer;
+}
+
+.btn-red {
+  background: #ef4444;
+  color: white;
   border: none;
 }
 
-/* DARK BUTTON */
-.app-shell.theme-dark .theme-toggle {
-  background: #111827;
-  color: #fff;
+.btn-dark {
+  background: #1f2937;
+  color: white;
+  border: none;
 }
 
-/* LIGHT BUTTON */
-.app-shell.theme-light .theme-toggle {
-  background: #ffffff;
-  color: #111827;
-  border: 1px solid rgba(17,24,39,0.08);
+/* CARD */
+.card {
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+/* DARK CARD */
+.theme-dark .card {
+  background: #111827;
+}
+
+/* LIGHT CARD */
+.theme-light .card {
+  background: white;
+}
+
+/* INPUT */
+.input, .select, .textarea {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  margin-top: 6px;
+}
+
+/* TABS */
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.tab {
+  padding: 10px;
+  cursor: pointer;
+}
+
+.tab-active {
+  font-weight: bold;
+  border-bottom: 2px solid red;
 }
