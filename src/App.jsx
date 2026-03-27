@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Search,
@@ -25,6 +25,17 @@ import {
   Trash2,
 } from "lucide-react";
 
+const STORAGE_KEYS = {
+  theme: "jobly_theme",
+  savedIds: "jobly_saved_ids",
+  applications: "jobly_applications",
+  profile: "jobly_profile",
+  jobPosts: "jobly_job_posts",
+  chat: "jobly_chat",
+  cvData: "jobly_cv_data",
+  savedCVs: "jobly_saved_cvs",
+};
+
 const offersSeed = [
   { id: 1, title: "Back Office Commerciale", company: "Adecco", city: "Milano", zone: "Bovisa", distance: 6, contract: "Tempo indeterminato", salary: "28K-32K", remote: "Ibrido", category: "Amministrazione", match: 91, urgent: true },
   { id: 2, title: "Customer Care Specialist", company: "Randstad", city: "Milano", zone: "Porta Garibaldi", distance: 9, contract: "Tempo determinato", salary: "24K-27K", remote: "On-site", category: "Customer Service", match: 84, urgent: false },
@@ -40,6 +51,71 @@ const notificationsSeed = [
   "La tua candidatura per Help Desk IT è in valutazione.",
 ];
 
+const defaultProfile = {
+  name: "Christian D.",
+  role: "Back Office / Order Management / Customer Support",
+  city: "Milano",
+  bio: "Profilo operativo con esperienza in customer support, gestione ordini e strumenti gestionali. Cerco ruoli stabili con crescita.",
+  skills: "SAP, Back Office, Customer Care, Excel, Ticketing, Gestione ordini",
+  cvName: "CV_Christian.pdf",
+};
+
+const defaultApplications = [
+  { id: 101, title: "Help Desk IT", company: "Sielte", status: "In valutazione" },
+  { id: 102, title: "Customer Care Specialist", company: "Randstad", status: "Inviata" },
+];
+
+const defaultJobPosts = [
+  { title: "Impiegato Ufficio Acquisti", company: "Studio Retail", city: "Milano", contract: "Tempo indeterminato" },
+];
+
+const defaultChat = [
+  {
+    who: "ai",
+    text: "Ciao, sono l’assistente Jobly. Posso aiutarti a trovare offerte, migliorare il CV e capire quali candidature hanno più senso.",
+  },
+];
+
+const defaultCvData = {
+  nome: "Christian",
+  cognome: "D.",
+  email: "",
+  telefono: "",
+  citta: "Milano",
+  ruolo: "Back Office / Order Management",
+  profilo:
+    "Professionista operativo con esperienza in customer support, gestione ordini e utilizzo di strumenti gestionali. Orientato alla precisione, alla continuità operativa e alla qualità del servizio.",
+  competenze: ["SAP", "Excel", "Back Office", "Customer Care", "Ticketing"],
+  newSkill: "",
+  esperienze: [
+    {
+      id: 1,
+      ruolo: "Back Office / Supporto Clienti",
+      azienda: "Azienda attuale",
+      periodo: "2024 - Oggi",
+      descrizione:
+        "Gestione richieste clienti, aggiornamento dati, utilizzo di SAP, supporto operativo e monitoraggio pratiche.",
+    },
+  ],
+  formazione: [
+    {
+      id: 1,
+      titolo: "",
+      istituto: "",
+      periodo: "",
+      descrizione: "",
+    },
+  ],
+  jobDescription: "",
+  coverLetter:
+    "Gentile Recruiter, desidero sottoporre la mia candidatura per il ruolo indicato. Ho maturato esperienza in attività operative, customer support e gestione ordini, con attenzione alla precisione e alla continuità del servizio. Ritengo che il mio profilo possa essere coerente con le esigenze della vostra realtà.",
+};
+
+const defaultSavedCVs = [
+  { id: 1, name: "CV_Christian.pdf", role: "Back Office / Order Management", updated: "Oggi", status: "Completo" },
+  { id: 2, name: "CV_Logistica.pdf", role: "Logistica / Magazzino", updated: "Ieri", status: "Bozza" },
+];
+
 const aiReply = (message) => {
   const lower = message.toLowerCase();
   if (lower.includes("milano") && lower.includes("indeterminato")) {
@@ -53,6 +129,15 @@ const aiReply = (message) => {
   }
   return "Posso aiutarti a filtrare offerte, migliorare il CV, leggere una job description o suggerire candidature coerenti con il tuo profilo.";
 };
+
+function readStorage(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
+}
 
 function Badge({ children, className = "" }) {
   return <span className={`badge ${className}`}>{children}</span>;
@@ -159,32 +244,20 @@ function SectionPreview({ title, content, emptyText }) {
 
 export default function JoblyApp() {
   const [tab, setTab] = useState("offerte");
-  const [theme, setTheme] = useState("dark");
+  const [theme, setTheme] = useState(() => readStorage(STORAGE_KEYS.theme, "dark"));
 
   const [search, setSearch] = useState("");
   const [city, setCity] = useState("all");
   const [contract, setContract] = useState("all");
   const [maxDistance, setMaxDistance] = useState("30");
 
-  const [savedIds, setSavedIds] = useState([1]);
-
-  const [applications, setApplications] = useState([
-    { id: 101, title: "Help Desk IT", company: "Sielte", status: "In valutazione" },
-    { id: 102, title: "Customer Care Specialist", company: "Randstad", status: "Inviata" },
-  ]);
-
-  const [profile, setProfile] = useState({
-    name: "Christian D.",
-    role: "Back Office / Order Management / Customer Support",
-    city: "Milano",
-    bio: "Profilo operativo con esperienza in customer support, gestione ordini e strumenti gestionali. Cerco ruoli stabili con crescita.",
-    skills: "SAP, Back Office, Customer Care, Excel, Ticketing, Gestione ordini",
-    cvName: "CV_Christian.pdf",
-  });
-
-  const [jobPosts, setJobPosts] = useState([
-    { title: "Impiegato Ufficio Acquisti", company: "Studio Retail", city: "Milano", contract: "Tempo indeterminato" },
-  ]);
+  const [savedIds, setSavedIds] = useState(() => readStorage(STORAGE_KEYS.savedIds, [1]));
+  const [applications, setApplications] = useState(() => readStorage(STORAGE_KEYS.applications, defaultApplications));
+  const [profile, setProfile] = useState(() => readStorage(STORAGE_KEYS.profile, defaultProfile));
+  const [jobPosts, setJobPosts] = useState(() => readStorage(STORAGE_KEYS.jobPosts, defaultJobPosts));
+  const [chat, setChat] = useState(() => readStorage(STORAGE_KEYS.chat, defaultChat));
+  const [cvData, setCvData] = useState(() => readStorage(STORAGE_KEYS.cvData, defaultCvData));
+  const [savedCVs, setSavedCVs] = useState(() => readStorage(STORAGE_KEYS.savedCVs, defaultSavedCVs));
 
   const [newPost, setNewPost] = useState({
     title: "",
@@ -194,53 +267,39 @@ export default function JoblyApp() {
   });
 
   const [chatInput, setChatInput] = useState("");
-  const [chat, setChat] = useState([
-    {
-      who: "ai",
-      text: "Ciao, sono l’assistente Jobly. Posso aiutarti a trovare offerte, migliorare il CV e capire quali candidature hanno più senso.",
-    },
-  ]);
-
   const [cvSection, setCvSection] = useState("dashboard");
-  const [cvData, setCvData] = useState({
-    nome: "Christian",
-    cognome: "D.",
-    email: "",
-    telefono: "",
-    citta: "Milano",
-    ruolo: "Back Office / Order Management",
-    profilo:
-      "Professionista operativo con esperienza in customer support, gestione ordini e utilizzo di strumenti gestionali. Orientato alla precisione, alla continuità operativa e alla qualità del servizio.",
-    competenze: ["SAP", "Excel", "Back Office", "Customer Care", "Ticketing"],
-    newSkill: "",
-    esperienze: [
-      {
-        id: 1,
-        ruolo: "Back Office / Supporto Clienti",
-        azienda: "Azienda attuale",
-        periodo: "2024 - Oggi",
-        descrizione:
-          "Gestione richieste clienti, aggiornamento dati, utilizzo di SAP, supporto operativo e monitoraggio pratiche.",
-      },
-    ],
-    formazione: [
-      {
-        id: 1,
-        titolo: "",
-        istituto: "",
-        periodo: "",
-        descrizione: "",
-      },
-    ],
-    jobDescription: "",
-    coverLetter:
-      "Gentile Recruiter, desidero sottoporre la mia candidatura per il ruolo indicato. Ho maturato esperienza in attività operative, customer support e gestione ordini, con attenzione alla precisione e alla continuità del servizio. Ritengo che il mio profilo possa essere coerente con le esigenze della vostra realtà.",
-  });
 
-  const [savedCVs, setSavedCVs] = useState([
-    { id: 1, name: "CV_Christian.pdf", role: "Back Office / Order Management", updated: "Oggi", status: "Completo" },
-    { id: 2, name: "CV_Logistica.pdf", role: "Logistica / Magazzino", updated: "Ieri", status: "Bozza" },
-  ]);
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.theme, JSON.stringify(theme));
+  }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.savedIds, JSON.stringify(savedIds));
+  }, [savedIds]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.applications, JSON.stringify(applications));
+  }, [applications]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.profile, JSON.stringify(profile));
+  }, [profile]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.jobPosts, JSON.stringify(jobPosts));
+  }, [jobPosts]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.chat, JSON.stringify(chat));
+  }, [chat]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.cvData, JSON.stringify(cvData));
+  }, [cvData]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.savedCVs, JSON.stringify(savedCVs));
+  }, [savedCVs]);
 
   const filteredOffers = useMemo(() => {
     return offersSeed.filter((o) => {
@@ -482,6 +541,11 @@ export default function JoblyApp() {
       ...prev,
       competenze: prev.competenze.filter((skill) => skill !== skillToRemove),
     }));
+  };
+
+  const clearLocalData = () => {
+    Object.values(STORAGE_KEYS).forEach((key) => localStorage.removeItem(key));
+    window.location.reload();
   };
 
   return (
@@ -834,6 +898,13 @@ export default function JoblyApp() {
                         Per aumentare il valore del CV, aggiungi una formazione più precisa e usa risultati concreti nelle esperienze.
                       </p>
                     </div>
+
+                    <div className="inner-box">
+                      <div className="section-label">Salvataggio locale</div>
+                      <p className="meta-text small">
+                        I dati attuali restano salvati nel browser anche se aggiorni la pagina.
+                      </p>
+                    </div>
                   </div>
                 </Card>
 
@@ -883,6 +954,17 @@ export default function JoblyApp() {
                       <p className="meta-text small">Riscrivi le attività in modo più professionale e mirato.</p>
                       <Button className="btn-dark" style={{ marginTop: 12 }} onClick={improveExperienceAI}>
                         Migliora esperienze
+                      </Button>
+                    </div>
+
+                    <div className="inner-box">
+                      <div className="title-row">
+                        <Trash2 size={16} color="#ef4444" />
+                        <div className="section-label">Reset dati locali</div>
+                      </div>
+                      <p className="meta-text small">Cancella i dati salvati in locale e ricarica l’app.</p>
+                      <Button className="btn-dark" style={{ marginTop: 12 }} onClick={clearLocalData}>
+                        Resetta dati
                       </Button>
                     </div>
                   </div>
