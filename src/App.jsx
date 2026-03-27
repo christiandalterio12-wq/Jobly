@@ -278,7 +278,8 @@ function AuthScreen({
   handleForgotPassword,
   enterDemo,
 }) {
-  const premiumBg = theme === "dark"
+  const isDark = theme === "dark";
+  const premiumBg = isDark
     ? {
         background:
           "radial-gradient(circle at 20% 20%, rgba(239,68,68,0.22), transparent 24%), radial-gradient(circle at 80% 30%, rgba(255,255,255,0.08), transparent 18%), radial-gradient(circle at 50% 80%, rgba(239,68,68,0.14), transparent 24%), linear-gradient(135deg, #090b10 0%, #11141b 45%, #0b0d12 100%)",
@@ -290,11 +291,12 @@ function AuthScreen({
         color: "#111827",
       };
 
-  const cardBg = theme === "dark" ? "rgba(17,20,27,0.88)" : "rgba(255,255,255,0.9)";
-  const secondary = theme === "dark" ? "#aeb6c7" : "#5b6472";
-  const border = theme === "dark" ? "rgba(255,255,255,0.08)" : "rgba(17,24,39,0.08)";
-  const inputBg = theme === "dark" ? "#0f131b" : "#f3f4f6";
-  const inputColor = theme === "dark" ? "#f5f7fb" : "#111827";
+  const cardBg = isDark ? "rgba(17,20,27,0.88)" : "rgba(255,255,255,0.92)";
+  const secondary = isDark ? "#aeb6c7" : "#5b6472";
+  const border = isDark ? "rgba(255,255,255,0.08)" : "rgba(17,24,39,0.08)";
+  const inputBg = isDark ? "#0f131b" : "#f3f4f6";
+  const inputColor = isDark ? "#f5f7fb" : "#111827";
+  const isMobile = typeof window !== "undefined" ? window.innerWidth <= 900 : false;
 
   return (
     <div
@@ -310,13 +312,13 @@ function AuthScreen({
         transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
         style={{
           position: "absolute",
-          width: 420,
-          height: 420,
+          width: isMobile ? 260 : 420,
+          height: isMobile ? 260 : 420,
           borderRadius: "50%",
           background: "rgba(239,68,68,0.16)",
           filter: "blur(40px)",
-          top: -80,
-          left: -80,
+          top: isMobile ? -60 : -80,
+          left: isMobile ? -60 : -80,
         }}
       />
       <motion.div
@@ -324,13 +326,13 @@ function AuthScreen({
         transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
         style={{
           position: "absolute",
-          width: 360,
-          height: 360,
+          width: isMobile ? 220 : 360,
+          height: isMobile ? 220 : 360,
           borderRadius: "50%",
           background: "rgba(255,255,255,0.08)",
           filter: "blur(44px)",
-          bottom: -80,
-          right: -50,
+          bottom: isMobile ? -40 : -80,
+          right: isMobile ? -30 : -50,
         }}
       />
 
@@ -338,19 +340,19 @@ function AuthScreen({
         style={{
           position: "relative",
           zIndex: 2,
-          width: "min(1200px, calc(100% - 32px))",
+          width: isMobile ? "min(100% - 20px, 560px)" : "min(1200px, calc(100% - 32px))",
           margin: "0 auto",
           minHeight: "100vh",
           display: "grid",
-          gridTemplateColumns: "1.1fr 0.9fr",
-          gap: 28,
+          gridTemplateColumns: isMobile ? "1fr" : "1.1fr 0.9fr",
+          gap: isMobile ? 18 : 28,
           alignItems: "center",
-          padding: "28px 0",
+          padding: isMobile ? "20px 0 28px" : "28px 0",
         }}
       >
-        <div style={{ paddingRight: 12 }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
-            <div style={{ fontSize: "2rem", fontWeight: 800, letterSpacing: "0.08em" }}>
+        <div style={{ paddingRight: isMobile ? 0 : 12, order: isMobile ? 1 : 0 }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 10, marginBottom: 18, flexWrap: "wrap" }}>
+            <div style={{ fontSize: isMobile ? "1.7rem" : "2rem", fontWeight: 800, letterSpacing: "0.08em" }}>
               <span style={{ color: premiumBg.color }}>JOB</span>
               <span style={{ color: "#ef4444" }}>LY</span>
             </div>
@@ -358,7 +360,7 @@ function AuthScreen({
               style={{
                 padding: "8px 12px",
                 borderRadius: 999,
-                background: theme === "dark" ? "rgba(255,255,255,0.08)" : "rgba(17,24,39,0.06)",
+                background: isDark ? "rgba(255,255,255,0.08)" : "rgba(17,24,39,0.06)",
                 border: `1px solid ${border}`,
                 fontSize: 13,
                 fontWeight: 700,
@@ -373,11 +375,11 @@ function AuthScreen({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
             style={{
-              fontSize: "clamp(2.3rem, 5vw, 4.4rem)",
-              lineHeight: 0.98,
+              fontSize: isMobile ? "2.35rem" : "clamp(2.3rem, 5vw, 4.4rem)",
+              lineHeight: isMobile ? 1.02 : 0.98,
               letterSpacing: "-0.05em",
               margin: "0 0 16px",
-              maxWidth: 620,
+              maxWidth: isMobile ? "100%" : 620,
             }}
           >
             La tua piattaforma lavoro,
@@ -390,9 +392,9 @@ function AuthScreen({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             style={{
-              maxWidth: 620,
+              maxWidth: isMobile ? "100%" : 620,
               color: secondary,
-              fontSize: 17,
+              fontSize: isMobile ? 15 : 17,
               margin: "0 0 24px",
             }}
           >
@@ -407,7 +409,7 @@ function AuthScreen({
                   padding: "10px 14px",
                   borderRadius: 999,
                   border: `1px solid ${border}`,
-                  background: theme === "dark" ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.62)",
+                  background: isDark ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.62)",
                   fontWeight: 700,
                   fontSize: 14,
                 }}
@@ -425,12 +427,15 @@ function AuthScreen({
           style={{
             background: cardBg,
             border: `1px solid ${border}`,
-            boxShadow: theme === "dark"
+            boxShadow: isDark
               ? "0 20px 60px rgba(0,0,0,0.35)"
               : "0 20px 60px rgba(15,23,42,0.12)",
-            borderRadius: 28,
-            padding: 26,
+            borderRadius: isMobile ? 22 : 28,
+            padding: isMobile ? 18 : 26,
             backdropFilter: "blur(18px)",
+            minWidth: 0,
+            width: "100%",
+            order: isMobile ? 2 : 0,
           }}
         >
           <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
@@ -445,14 +450,15 @@ function AuthScreen({
                 onClick={() => setAuthMode(item.key)}
                 style={{
                   border: "none",
-                  padding: "11px 14px",
+                  padding: isMobile ? "10px 12px" : "11px 14px",
                   borderRadius: 999,
                   cursor: "pointer",
                   fontWeight: 700,
+                  fontSize: isMobile ? 14 : 15,
                   background:
                     authMode === item.key
                       ? "#ef4444"
-                      : theme === "dark"
+                      : isDark
                       ? "rgba(255,255,255,0.06)"
                       : "rgba(17,24,39,0.06)",
                   color: authMode === item.key ? "#fff" : inputColor,
@@ -464,7 +470,7 @@ function AuthScreen({
           </div>
 
           <div style={{ marginBottom: 18 }}>
-            <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 6 }}>
+            <div style={{ fontSize: isMobile ? 21 : 24, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 6 }}>
               {authMode === "login" && "Bentornato"}
               {authMode === "register" && "Crea il tuo account"}
               {authMode === "forgot" && "Recupera l’accesso"}
@@ -484,7 +490,7 @@ function AuthScreen({
                 borderRadius: 14,
                 background: "rgba(239,68,68,0.12)",
                 border: "1px solid rgba(239,68,68,0.25)",
-                color: theme === "dark" ? "#fecaca" : "#b91c1c",
+                color: isDark ? "#fecaca" : "#b91c1c",
                 fontSize: 14,
                 fontWeight: 600,
               }}
@@ -501,7 +507,7 @@ function AuthScreen({
                 borderRadius: 14,
                 background: "rgba(34,197,94,0.12)",
                 border: "1px solid rgba(34,197,94,0.22)",
-                color: theme === "dark" ? "#bbf7d0" : "#166534",
+                color: isDark ? "#bbf7d0" : "#166534",
                 fontSize: 14,
                 fontWeight: 600,
               }}
@@ -528,6 +534,7 @@ function AuthScreen({
                       background: inputBg,
                       color: inputColor,
                       outline: "none",
+                      minWidth: 0,
                     }}
                   />
                 </div>
@@ -550,6 +557,7 @@ function AuthScreen({
                     background: inputBg,
                     color: inputColor,
                     outline: "none",
+                    minWidth: 0,
                   }}
                 />
               </div>
@@ -573,6 +581,7 @@ function AuthScreen({
                       background: inputBg,
                       color: inputColor,
                       outline: "none",
+                      minWidth: 0,
                     }}
                   />
                   <button
@@ -612,6 +621,7 @@ function AuthScreen({
                       background: inputBg,
                       color: inputColor,
                       outline: "none",
+                      minWidth: 0,
                     }}
                   />
                 </div>
