@@ -131,6 +131,8 @@ const defaultAuthSession = {
   isAuthenticated: false,
   email: "",
   name: "",
+  mode: "",
+  isDemo: false,
 };
 
 const defaultAuthUsers = [];
@@ -690,6 +692,23 @@ export default function JoblyApp() {
 
   const [chatInput, setChatInput] = useState("");
 
+  const syncUserIntoProfile = (user) => {
+    const safeName = user?.name?.trim() || "Utente Jobly";
+    const safeEmail = user?.email?.trim() || "";
+
+    setProfile((prev) => ({
+      ...prev,
+      name: safeName,
+    }));
+
+    setCvData((prev) => ({
+      ...prev,
+      nome: safeName.split(" ")[0] || prev.nome,
+      cognome: safeName.split(" ").slice(1).join(" ") || prev.cognome,
+      email: prev.email || safeEmail,
+    }));
+  };
+
   const persistAllData = (message = "Dati salvati") => {
     const now = new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
 
@@ -704,6 +723,8 @@ export default function JoblyApp() {
     localStorage.setItem(STORAGE_KEYS.activeTab, JSON.stringify(tab));
     localStorage.setItem(STORAGE_KEYS.activeCvSection, JSON.stringify(cvSection));
     localStorage.setItem(STORAGE_KEYS.lastSavedAt, JSON.stringify(now));
+    localStorage.setItem(STORAGE_KEYS.authSession, JSON.stringify(authSession));
+    localStorage.setItem(STORAGE_KEYS.authUsers, JSON.stringify(authUsers));
 
     setLastSavedAt(now);
     setSaveFeedback(`${message} alle ${now}`);
@@ -1023,24 +1044,29 @@ export default function JoblyApp() {
       return;
     }
 
-    const user = authUsers.find((u) => u.email === email && u.password === password);
+    const user = authUsers.find((u) => u.email === email);
     if (!user) {
-      setAuthError("Credenziali non valide.");
+      setAuthError("Nessun account trovato con questa email.");
       return;
     }
 
-    setAuthSession({
+    if (user.password !== password) {
+      setAuthError("Password non corretta.");
+      return;
+    }
+
+    const session = {
       isAuthenticated: true,
       email: user.email,
       name: user.name || "Utente Jobly",
-    });
+      mode: "account",
+      isDemo: false,
+    };
 
-    setProfile((prev) => ({
-      ...prev,
-      name: user.name || prev.name,
-    }));
-
+    setAuthSession(session);
+    syncUserIntoProfile(user);
     setAuthSuccess("Accesso effettuato.");
+    setAuthForm({ name: "", email: "", password: "", confirmPassword: "" });
   };
 
   const handleRegister = () => {
@@ -1054,6 +1080,11 @@ export default function JoblyApp() {
 
     if (!name || !email || !password || !confirmPassword) {
       setAuthError("Compila tutti i campi.");
+      return;
+    }
+
+    if (!email.includes("@") || !email.includes(".")) {
+      setAuthError("Inserisci una email valida.");
       return;
     }
 
@@ -1072,20 +1103,28 @@ export default function JoblyApp() {
       return;
     }
 
-    const newUser = { name, email, password };
+    const newUser = {
+      id: Date.now(),
+      name,
+      email,
+      password,
+      createdAt: new Date().toISOString(),
+    };
+
     setAuthUsers((prev) => [...prev, newUser]);
-    setAuthSession({
+
+    const session = {
       isAuthenticated: true,
       email,
       name,
-    });
+      mode: "account",
+      isDemo: false,
+    };
 
-    setProfile((prev) => ({
-      ...prev,
-      name,
-    }));
-
+    setAuthSession(session);
+    syncUserIntoProfile(newUser);
     setAuthSuccess("Account creato con successo.");
+    setAuthForm({ name: "", email: "", password: "", confirmPassword: "" });
   };
 
   const handleForgotPassword = () => {
@@ -1098,23 +1137,29 @@ export default function JoblyApp() {
       return;
     }
 
-    const exists = authUsers.some((u) => u.email === email);
-    if (!exists) {
+    const user = authUsers.find((u) => u.email === email);
+    if (!user) {
       setAuthError("Nessun account trovato con questa email.");
       return;
     }
 
-    setAuthSuccess("Richiesta inviata. Per ora è una simulazione locale.");
+    setAuthSuccess(`Richiesta registrata per ${email}. Per ora è una simulazione locale.`);
   };
 
   const enterDemo = () => {
     setAuthError("");
     setAuthSuccess("");
-    setAuthSession({
+
+    const demoSession = {
       isAuthenticated: true,
       email: "demo@jobly.local",
       name: "Demo User",
-    });
+      mode: "demo",
+      isDemo: true,
+    };
+
+    setAuthSession(demoSession);
+    syncUserIntoProfile({ name: "Demo User", email: "demo@jobly.local" });
   };
 
   const handleLogout = () => {
@@ -1159,6 +1204,7 @@ export default function JoblyApp() {
             <span className="brand-red">LY</span>
           </div>
           <Badge className="badge-dark">AI Job Platform</Badge>
+          {authSession.isDemo ? <Badge>Modalità demo</Badge> : <Badge>{authSession.email}</Badge>}
         </div>
 
         <div className="top-icons">
@@ -1174,7 +1220,7 @@ export default function JoblyApp() {
           <Bell size={20} />
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
             <User size={20} />
-            <span style={{ fontSize: 13, fontWeight: 700, maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <span style={{ fontSize: 13, fontWeight: 700, maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {authSession.name}
             </span>
           </div>
@@ -1193,7 +1239,11 @@ export default function JoblyApp() {
       <section className="hero">
         <div className="hero-left">
           <h1>Trova il lavoro giusto, con un’interfaccia che ti fa tornare.</h1>
-          <p>Jobly unisce offerte, candidature, profilo pubblico e assistente AI in un’unica esperienza moderna.</p>
+          <p>
+            {authSession.isDemo
+              ? "Stai usando Jobly in modalità demo. Puoi esplorare tutte le sezioni e testare il flusso."
+              : `Bentornato ${authSession.name}. Jobly unisce offerte, candidature, profilo pubblico e assistente AI in un’unica esperienza moderna.`}
+          </p>
           <div className="chips">
             <Badge className="badge-red">Match intelligenti</Badge>
             <Badge className="badge-dark">Filtri smart</Badge>
