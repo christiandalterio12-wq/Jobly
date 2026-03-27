@@ -18,6 +18,9 @@ import {
   Download,
   CheckCircle2,
   Upload,
+  GraduationCap,
+  Layers3,
+  Target,
 } from "lucide-react";
 
 const offersSeed = [
@@ -143,6 +146,15 @@ function CVActionCard({ icon, title, desc, buttonLabel, onClick, red = false }) 
   );
 }
 
+function SectionPreview({ title, content, emptyText }) {
+  return (
+    <div className="inner-box">
+      <div className="section-label">{title}</div>
+      <p>{content?.trim() ? content : emptyText}</p>
+    </div>
+  );
+}
+
 export default function JoblyApp() {
   const [tab, setTab] = useState("offerte");
   const [theme, setTheme] = useState("dark");
@@ -207,8 +219,8 @@ export default function JoblyApp() {
   });
 
   const [savedCVs, setSavedCVs] = useState([
-    { id: 1, name: "CV_Christian.pdf", role: "Back Office / Order Management", updated: "Oggi" },
-    { id: 2, name: "CV_Logistica.pdf", role: "Logistica / Magazzino", updated: "Ieri" },
+    { id: 1, name: "CV_Christian.pdf", role: "Back Office / Order Management", updated: "Oggi", status: "Completo" },
+    { id: 2, name: "CV_Logistica.pdf", role: "Logistica / Magazzino", updated: "Ieri", status: "Bozza" },
   ]);
 
   const filteredOffers = useMemo(() => {
@@ -242,7 +254,17 @@ export default function JoblyApp() {
     if (cvData.profilo) score += 15;
     if (cvData.esperienze) score += 15;
     if (cvData.competenze) score += 15;
+    if (cvData.formazione) score += 10;
     return Math.min(score, 100);
+  }, [cvData]);
+
+  const missingCVItems = useMemo(() => {
+    const items = [];
+    if (!cvData.email) items.push("email");
+    if (!cvData.telefono) items.push("telefono");
+    if (!cvData.formazione) items.push("formazione");
+    if (!cvData.jobDescription) items.push("annuncio per adattamento");
+    return items;
   }, [cvData]);
 
   const applyToOffer = (offer) => {
@@ -327,9 +349,15 @@ export default function JoblyApp() {
       name: `${cvData.nome || "CV"}_${cvData.ruolo?.replaceAll("/", "-") || "Nuovo"}.pdf`,
       role: cvData.ruolo || "Ruolo non specificato",
       updated: "Adesso",
+      status: cvCompletion >= 80 ? "Completo" : "Bozza",
     };
     setSavedCVs((prev) => [newCV, ...prev]);
     setProfile((prev) => ({ ...prev, cvName: newCV.name }));
+  };
+
+  const openCVSection = (section) => {
+    setTab("cv");
+    setCvSection(section);
   };
 
   return (
@@ -546,7 +574,7 @@ export default function JoblyApp() {
                 <Textarea value={profile.skills} onChange={(e) => setProfile({ ...profile, skills: e.target.value })} placeholder="Competenze" />
                 <Input value={profile.cvName} onChange={(e) => setProfile({ ...profile, cvName: e.target.value })} placeholder="Nome CV" />
                 <Button className="btn-red">Salva profilo</Button>
-                <Button className="btn-dark" onClick={() => { setTab("cv"); setCvSection("dashboard"); }}>
+                <Button className="btn-dark" onClick={() => openCVSection("dashboard")}>
                   <FileText size={16} /> Vai a CV Studio
                 </Button>
               </div>
@@ -638,7 +666,7 @@ export default function JoblyApp() {
                       onClick={() => setCvSection("improve")}
                     />
                     <CVActionCard
-                      icon={<Briefcase size={18} color="#ef4444" />}
+                      icon={<Target size={18} color="#ef4444" />}
                       title="Adatta CV a offerta"
                       desc="Ottimizza il CV per una job description specifica e migliora il match."
                       buttonLabel="Adatta ora"
@@ -655,6 +683,37 @@ export default function JoblyApp() {
                 </Card>
 
                 <Card className="preview-card">
+                  <h3>Stato del tuo CV</h3>
+                  <div className="stack">
+                    <div className="inner-box">
+                      <div className="section-label">Sezioni completate</div>
+                      <div className="chips">
+                        <Badge>{cvData.nome ? "Dati personali" : "Dati mancanti"}</Badge>
+                        <Badge>{cvData.profilo ? "Profilo" : "Profilo mancante"}</Badge>
+                        <Badge>{cvData.esperienze ? "Esperienze" : "Esperienze mancanti"}</Badge>
+                        <Badge>{cvData.competenze ? "Competenze" : "Competenze mancanti"}</Badge>
+                      </div>
+                    </div>
+
+                    <div className="inner-box">
+                      <div className="section-label">Da completare</div>
+                      <p className="meta-text small">
+                        {missingCVItems.length > 0
+                          ? `Ti conviene completare: ${missingCVItems.join(", ")}.`
+                          : "Hai compilato tutte le sezioni principali del CV."}
+                      </p>
+                    </div>
+
+                    <div className="inner-box">
+                      <div className="section-label">Suggerimento AI</div>
+                      <p className="meta-text small">
+                        Per aumentare il valore del CV, aggiungi una formazione più precisa e usa risultati concreti nelle esperienze.
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card>
                   <h3>I tuoi CV</h3>
                   <div className="stack">
                     {savedCVs.map((cv) => (
@@ -662,6 +721,9 @@ export default function JoblyApp() {
                         <div className="offer-title">{cv.name}</div>
                         <div className="meta-text small">{cv.role}</div>
                         <div className="meta-text small">Ultimo aggiornamento: {cv.updated}</div>
+                        <div className="chips" style={{ marginTop: 10 }}>
+                          <Badge className={cv.status === "Completo" ? "badge-dark" : ""}>{cv.status}</Badge>
+                        </div>
                         <div className="actions" style={{ marginTop: 12 }}>
                           <Button className="btn-dark">Apri</Button>
                           <Button className="btn-dark">Modifica</Button>
@@ -673,13 +735,32 @@ export default function JoblyApp() {
                       </div>
                     ))}
                   </div>
+                </Card>
 
-                  <div className="inner-box" style={{ marginTop: 16 }}>
-                    <div className="section-label">Suggerimento AI</div>
-                    <p className="meta-text small">
-                      Il tuo CV è ben impostato, ma può migliorare se rendi più misurabili le esperienze
-                      e adatti il profilo al ruolo per cui ti candidi.
-                    </p>
+                <Card>
+                  <h3>Scorciatoie utili</h3>
+                  <div className="stack">
+                    <div className="inner-box">
+                      <div className="title-row">
+                        <Layers3 size={16} color="#ef4444" />
+                        <div className="section-label">Ottimizza il profilo</div>
+                      </div>
+                      <p className="meta-text small">Rendi il tuo profilo più coerente con ruoli di back office, order management e customer support.</p>
+                      <Button className="btn-dark" style={{ marginTop: 12 }} onClick={generateProfileAI}>
+                        Genera miglioramento
+                      </Button>
+                    </div>
+
+                    <div className="inner-box">
+                      <div className="title-row">
+                        <Briefcase size={16} color="#ef4444" />
+                        <div className="section-label">Rinforza le esperienze</div>
+                      </div>
+                      <p className="meta-text small">Riscrivi le attività in modo più professionale e mirato.</p>
+                      <Button className="btn-dark" style={{ marginTop: 12 }} onClick={improveExperienceAI}>
+                        Migliora esperienze
+                      </Button>
+                    </div>
                   </div>
                 </Card>
               </div>
@@ -690,12 +771,20 @@ export default function JoblyApp() {
                 <Card>
                   <h3>Crea il tuo CV</h3>
                   <div className="stack">
-                    <Input value={cvData.nome} onChange={(e) => setCvData({ ...cvData, nome: e.target.value })} placeholder="Nome" />
-                    <Input value={cvData.cognome} onChange={(e) => setCvData({ ...cvData, cognome: e.target.value })} placeholder="Cognome" />
-                    <Input value={cvData.email} onChange={(e) => setCvData({ ...cvData, email: e.target.value })} placeholder="Email" />
-                    <Input value={cvData.telefono} onChange={(e) => setCvData({ ...cvData, telefono: e.target.value })} placeholder="Telefono" />
-                    <Input value={cvData.citta} onChange={(e) => setCvData({ ...cvData, citta: e.target.value })} placeholder="Città" />
-                    <Input value={cvData.ruolo} onChange={(e) => setCvData({ ...cvData, ruolo: e.target.value })} placeholder="Ruolo desiderato" />
+                    <div className="inner-box">
+                      <div className="title-row">
+                        <User size={16} color="#ef4444" />
+                        <div className="section-label">Dati personali</div>
+                      </div>
+                      <div className="stack">
+                        <Input value={cvData.nome} onChange={(e) => setCvData({ ...cvData, nome: e.target.value })} placeholder="Nome" />
+                        <Input value={cvData.cognome} onChange={(e) => setCvData({ ...cvData, cognome: e.target.value })} placeholder="Cognome" />
+                        <Input value={cvData.email} onChange={(e) => setCvData({ ...cvData, email: e.target.value })} placeholder="Email" />
+                        <Input value={cvData.telefono} onChange={(e) => setCvData({ ...cvData, telefono: e.target.value })} placeholder="Telefono" />
+                        <Input value={cvData.citta} onChange={(e) => setCvData({ ...cvData, citta: e.target.value })} placeholder="Città" />
+                        <Input value={cvData.ruolo} onChange={(e) => setCvData({ ...cvData, ruolo: e.target.value })} placeholder="Ruolo desiderato" />
+                      </div>
+                    </div>
 
                     <div className="inner-box">
                       <div className="title-row">
@@ -721,7 +810,7 @@ export default function JoblyApp() {
 
                     <div className="inner-box">
                       <div className="title-row">
-                        <CheckCircle2 size={16} color="#ef4444" />
+                        <GraduationCap size={16} color="#ef4444" />
                         <div className="section-label">Formazione</div>
                       </div>
                       <Textarea value={cvData.formazione} onChange={(e) => setCvData({ ...cvData, formazione: e.target.value })} placeholder="Titolo di studio, corsi, certificazioni" />
@@ -729,7 +818,7 @@ export default function JoblyApp() {
 
                     <div className="inner-box">
                       <div className="title-row">
-                        <Sparkles size={16} color="#ef4444" />
+                        <CheckCircle2 size={16} color="#ef4444" />
                         <div className="section-label">Competenze</div>
                       </div>
                       <Textarea value={cvData.competenze} onChange={(e) => setCvData({ ...cvData, competenze: e.target.value })} placeholder="Competenze tecniche e trasversali" />
@@ -760,22 +849,11 @@ export default function JoblyApp() {
                       <div className="meta-text small">{cvData.citta}</div>
                     </div>
 
-                    <div>
-                      <div className="section-label">Profilo</div>
-                      <p>{cvData.profilo}</p>
-                    </div>
+                    <SectionPreview title="Profilo" content={cvData.profilo} emptyText="Aggiungi un profilo professionale." />
+                    <SectionPreview title="Esperienze" content={cvData.esperienze} emptyText="Aggiungi almeno una esperienza lavorativa." />
+                    <SectionPreview title="Formazione" content={cvData.formazione} emptyText="Aggiungi il tuo titolo di studio e gli eventuali corsi." />
 
-                    <div>
-                      <div className="section-label">Esperienze</div>
-                      <p>{cvData.esperienze}</p>
-                    </div>
-
-                    <div>
-                      <div className="section-label">Formazione</div>
-                      <p>{cvData.formazione || "Aggiungi il tuo titolo di studio e gli eventuali corsi."}</p>
-                    </div>
-
-                    <div>
+                    <div className="inner-box">
                       <div className="section-label">Competenze</div>
                       <div className="chips">
                         {cvData.competenze.split(",").map((s, i) => (
@@ -812,27 +890,22 @@ export default function JoblyApp() {
                     </div>
 
                     <div className="inner-box">
-                      <div className="section-label">Versione migliorata</div>
+                      <div className="section-label">Cosa migliora l’AI</div>
                       <p className="meta-text small">
-                        L’AI ha reso il testo più professionale, più pulito e più coerente con ruoli di back office, order management e customer support.
+                        L’AI rende il tono più professionale, pulisce le descrizioni e rafforza la coerenza con il ruolo cercato.
                       </p>
                     </div>
                   </div>
                 </Card>
 
                 <Card className="preview-card">
-                  <h3>Risultato aggiornato</h3>
+                  <h3>Versione aggiornata</h3>
                   <div className="stack">
-                    <div>
-                      <div className="section-label">Profilo</div>
-                      <p>{cvData.profilo}</p>
-                    </div>
-                    <div>
-                      <div className="section-label">Esperienze</div>
-                      <p>{cvData.esperienze}</p>
-                    </div>
-                    <div>
-                      <div className="section-label">Competenze</div>
+                    <SectionPreview title="Profilo migliorato" content={cvData.profilo} emptyText="Nessun profilo generato." />
+                    <SectionPreview title="Esperienze migliorate" content={cvData.esperienze} emptyText="Nessuna esperienza aggiornata." />
+
+                    <div className="inner-box">
+                      <div className="section-label">Competenze suggerite</div>
                       <div className="chips">
                         {cvData.competenze.split(",").map((s, i) => (
                           <Badge key={i}>{s.trim()}</Badge>
@@ -863,6 +936,15 @@ export default function JoblyApp() {
                       </p>
                     </div>
 
+                    <div className="inner-box">
+                      <div className="section-label">Azioni consigliate</div>
+                      <div className="chips">
+                        <Badge>Adatta profilo</Badge>
+                        <Badge>Rafforza competenze</Badge>
+                        <Badge>Personalizza esperienza</Badge>
+                      </div>
+                    </div>
+
                     <div className="actions">
                       <Button className="btn-red" onClick={adaptCVAI}>Adatta il CV</Button>
                       <Button className="btn-dark" onClick={generateCoverLetterAI}>Genera lettera</Button>
@@ -873,11 +955,9 @@ export default function JoblyApp() {
                 <Card className="preview-card">
                   <h3>CV ottimizzato</h3>
                   <div className="stack">
-                    <div>
-                      <div className="section-label">Profilo adattato</div>
-                      <p>{cvData.profilo}</p>
-                    </div>
-                    <div>
+                    <SectionPreview title="Profilo adattato" content={cvData.profilo} emptyText="Genera una versione adattata." />
+
+                    <div className="inner-box">
                       <div className="section-label">Competenze consigliate</div>
                       <div className="chips">
                         {cvData.competenze.split(",").map((s, i) => (
@@ -885,10 +965,11 @@ export default function JoblyApp() {
                         ))}
                       </div>
                     </div>
+
                     <div className="inner-box">
                       <div className="section-label">Valutazione match</div>
                       <p className="meta-text small">
-                        Il tuo profilo è già coerente, ma migliora se evidenzi gestione ordini, precisione operativa e utilizzo di strumenti gestionali.
+                        Il tuo profilo è coerente, ma migliora se evidenzi gestione ordini, precisione operativa e uso di strumenti gestionali.
                       </p>
                     </div>
                   </div>
