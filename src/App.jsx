@@ -17,7 +17,6 @@ import {
   CheckCircle2,
   Upload,
   GraduationCap,
-  Layers3,
   Target,
   Plus,
   Trash2,
