@@ -133,7 +133,7 @@ const locationData = {
       Villafranca: [],
     },
   },
-  Emilia-Romagna: {
+  "Emilia-Romagna": {
     Bologna: {
       Bologna: ["Centro", "San Donato", "Navile", "Saragozza"],
       Imola: [],
@@ -150,7 +150,7 @@ const locationData = {
   Toscana: {
     Firenze: {
       Firenze: ["Centro", "Novoli", "Campo di Marte", "Isolotto"],
-      Sesto Fiorentino: [],
+      "Sesto Fiorentino": [],
       Scandicci: [],
     },
   },
