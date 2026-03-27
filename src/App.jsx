@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Search,
@@ -120,6 +120,10 @@ const defaultCvData = {
   jobDescription: "",
   coverLetter:
     "Gentile Recruiter, desidero sottoporre la mia candidatura per il ruolo indicato. Ho maturato esperienza in attività operative, customer support e gestione ordini, con attenzione alla precisione e alla continuità del servizio. Ritengo che il mio profilo possa essere coerente con le esigenze della vostra realtà.",
+  importedFile: null,
+  importedText: "",
+  importedStatus: "",
+  importedManualText: "",
 };
 
 const defaultSavedCVs = [
@@ -158,6 +162,30 @@ function readStorage(key, fallback) {
   } catch {
     return fallback;
   }
+}
+
+function formatFileSize(bytes) {
+  if (!bytes && bytes !== 0) return "-";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function useIsMobile(breakpoint = 900) {
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth <= breakpoint;
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onResize = () => setIsMobile(window.innerWidth <= breakpoint);
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [breakpoint]);
+
+  return isMobile;
 }
 
 function Badge({ children, className = "" }) {
@@ -279,78 +307,85 @@ function AuthScreen({
   enterDemo,
 }) {
   const isDark = theme === "dark";
+  const isMobile = useIsMobile(900);
+
   const premiumBg = isDark
     ? {
         background:
-          "radial-gradient(circle at 20% 20%, rgba(239,68,68,0.22), transparent 24%), radial-gradient(circle at 80% 30%, rgba(255,255,255,0.08), transparent 18%), radial-gradient(circle at 50% 80%, rgba(239,68,68,0.14), transparent 24%), linear-gradient(135deg, #090b10 0%, #11141b 45%, #0b0d12 100%)",
+          "linear-gradient(180deg, #0a0d12 0%, #11141b 55%, #0c1016 100%)",
         color: "#f5f7fb",
       }
     : {
         background:
-          "radial-gradient(circle at 20% 20%, rgba(239,68,68,0.18), transparent 24%), radial-gradient(circle at 80% 30%, rgba(17,24,39,0.06), transparent 18%), radial-gradient(circle at 50% 80%, rgba(239,68,68,0.12), transparent 24%), linear-gradient(135deg, #ffffff 0%, #f4f7fb 48%, #eef2f7 100%)",
+          "linear-gradient(180deg, #ffffff 0%, #f4f7fb 55%, #eef2f7 100%)",
         color: "#111827",
       };
 
-  const cardBg = isDark ? "rgba(17,20,27,0.88)" : "rgba(255,255,255,0.92)";
+  const cardBg = isDark ? "rgba(17,20,27,0.96)" : "rgba(255,255,255,0.98)";
   const secondary = isDark ? "#aeb6c7" : "#5b6472";
   const border = isDark ? "rgba(255,255,255,0.08)" : "rgba(17,24,39,0.08)";
   const inputBg = isDark ? "#0f131b" : "#f3f4f6";
   const inputColor = isDark ? "#f5f7fb" : "#111827";
-  const isMobile = typeof window !== "undefined" ? window.innerWidth <= 900 : false;
 
   return (
     <div
       style={{
-        minHeight: "100vh",
+        minHeight: "100svh",
         ...premiumBg,
         position: "relative",
-        overflow: "hidden",
+        overflowX: "hidden",
       }}
     >
-      <motion.div
-        animate={{ scale: [1, 1.08, 1], rotate: [0, 12, 0] }}
-        transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-        style={{
-          position: "absolute",
-          width: isMobile ? 260 : 420,
-          height: isMobile ? 260 : 420,
-          borderRadius: "50%",
-          background: "rgba(239,68,68,0.16)",
-          filter: "blur(40px)",
-          top: isMobile ? -60 : -80,
-          left: isMobile ? -60 : -80,
-        }}
-      />
-      <motion.div
-        animate={{ scale: [1.1, 1, 1.1], y: [0, -20, 0] }}
-        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-        style={{
-          position: "absolute",
-          width: isMobile ? 220 : 360,
-          height: isMobile ? 220 : 360,
-          borderRadius: "50%",
-          background: "rgba(255,255,255,0.08)",
-          filter: "blur(44px)",
-          bottom: isMobile ? -40 : -80,
-          right: isMobile ? -30 : -50,
-        }}
-      />
+      {!isMobile && (
+        <>
+          <motion.div
+            animate={{ scale: [1, 1.08, 1], rotate: [0, 12, 0] }}
+            transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+            style={{
+              position: "absolute",
+              width: 420,
+              height: 420,
+              borderRadius: "50%",
+              background: "rgba(239,68,68,0.12)",
+              filter: "blur(40px)",
+              top: -80,
+              left: -80,
+            }}
+          />
+          <motion.div
+            animate={{ scale: [1.1, 1, 1.1], y: [0, -20, 0] }}
+            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+            style={{
+              position: "absolute",
+              width: 360,
+              height: 360,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.05)",
+              filter: "blur(44px)",
+              bottom: -80,
+              right: -50,
+            }}
+          />
+        </>
+      )}
 
       <div
         style={{
           position: "relative",
           zIndex: 2,
-          width: isMobile ? "min(100% - 20px, 560px)" : "min(1200px, calc(100% - 32px))",
+          width: "100%",
+          maxWidth: isMobile ? 560 : 1200,
           margin: "0 auto",
-          minHeight: "100vh",
+          minHeight: "100svh",
           display: "grid",
-          gridTemplateColumns: isMobile ? "1fr" : "1.1fr 0.9fr",
-          gap: isMobile ? 18 : 28,
+          gridTemplateColumns: isMobile ? "1fr" : "1.08fr 0.92fr",
+          gap: isMobile ? 20 : 28,
           alignItems: "center",
-          padding: isMobile ? "20px 0 28px" : "28px 0",
+          padding: isMobile ? "20px 16px 32px" : "28px 24px",
+          boxSizing: "border-box",
         }}
       >
-        <div style={{ paddingRight: isMobile ? 0 : 12, order: isMobile ? 1 : 0 }}>
+        <div style={{ paddingRight: isMobile ? 0 : 12 }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 10, marginBottom: 18, flexWrap: "wrap" }}>
             <div style={{ fontSize: isMobile ? "1.7rem" : "2rem", fontWeight: 800, letterSpacing: "0.08em" }}>
               <span style={{ color: premiumBg.color }}>JOB</span>
@@ -375,11 +410,11 @@ function AuthScreen({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
             style={{
-              fontSize: isMobile ? "2.35rem" : "clamp(2.3rem, 5vw, 4.4rem)",
-              lineHeight: isMobile ? 1.02 : 0.98,
+              fontSize: isMobile ? "2.2rem" : "clamp(2.3rem, 5vw, 4.4rem)",
+              lineHeight: isMobile ? 1.03 : 0.98,
               letterSpacing: "-0.05em",
               margin: "0 0 16px",
-              maxWidth: isMobile ? "100%" : 620,
+              maxWidth: 620,
             }}
           >
             La tua piattaforma lavoro,
@@ -392,7 +427,7 @@ function AuthScreen({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             style={{
-              maxWidth: isMobile ? "100%" : 620,
+              maxWidth: 620,
               color: secondary,
               fontSize: isMobile ? 15 : 17,
               margin: "0 0 24px",
@@ -421,21 +456,20 @@ function AuthScreen({
         </div>
 
         <motion.div
-          initial={{ opacity: 0, y: 18, scale: 0.98 }}
+          initial={{ opacity: 0, y: 18, scale: 0.99 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.45 }}
           style={{
             background: cardBg,
             border: `1px solid ${border}`,
             boxShadow: isDark
-              ? "0 20px 60px rgba(0,0,0,0.35)"
-              : "0 20px 60px rgba(15,23,42,0.12)",
+              ? "0 20px 60px rgba(0,0,0,0.28)"
+              : "0 20px 60px rgba(15,23,42,0.10)",
             borderRadius: isMobile ? 22 : 28,
             padding: isMobile ? 18 : 26,
-            backdropFilter: "blur(18px)",
             minWidth: 0,
             width: "100%",
-            order: isMobile ? 2 : 0,
+            boxSizing: "border-box",
           }}
         >
           <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
@@ -535,6 +569,7 @@ function AuthScreen({
                       color: inputColor,
                       outline: "none",
                       minWidth: 0,
+                      boxSizing: "border-box",
                     }}
                   />
                 </div>
@@ -558,6 +593,7 @@ function AuthScreen({
                     color: inputColor,
                     outline: "none",
                     minWidth: 0,
+                    boxSizing: "border-box",
                   }}
                 />
               </div>
@@ -582,6 +618,7 @@ function AuthScreen({
                       color: inputColor,
                       outline: "none",
                       minWidth: 0,
+                      boxSizing: "border-box",
                     }}
                   />
                   <button
@@ -622,6 +659,7 @@ function AuthScreen({
                       color: inputColor,
                       outline: "none",
                       minWidth: 0,
+                      boxSizing: "border-box",
                     }}
                   />
                 </div>
@@ -652,7 +690,7 @@ function AuthScreen({
           </div>
 
           <div style={{ marginTop: 18, color: secondary, fontSize: 13 }}>
-            Accesso premium, semplice e immediato. Il suono lo valutiamo dopo.
+            Accesso premium, semplice e compatibile con Safari iPhone.
           </div>
         </motion.div>
       </div>
@@ -660,551 +698,69 @@ function AuthScreen({
   );
 }
 
-export default function JoblyApp() {
-  const [tab, setTab] = useState(() => readStorage(STORAGE_KEYS.activeTab, "offerte"));
-  const [theme, setTheme] = useState(() => readStorage(STORAGE_KEYS.theme, "dark"));
-
-  const [search, setSearch] = useState("");
-  const [city, setCity] = useState("all");
-  const [contract, setContract] = useState("all");
-  const [maxDistance, setMaxDistance] = useState("30");
-
-  const [savedIds, setSavedIds] = useState(() => readStorage(STORAGE_KEYS.savedIds, [1]));
-  const [applications, setApplications] = useState(() => readStorage(STORAGE_KEYS.applications, defaultApplications));
-  const [profile, setProfile] = useState(() => readStorage(STORAGE_KEYS.profile, defaultProfile));
-  const [jobPosts, setJobPosts] = useState(() => readStorage(STORAGE_KEYS.jobPosts, defaultJobPosts));
-  const [chat, setChat] = useState(() => readStorage(STORAGE_KEYS.chat, defaultChat));
-  const [cvData, setCvData] = useState(() => readStorage(STORAGE_KEYS.cvData, defaultCvData));
-  const [savedCVs, setSavedCVs] = useState(() => readStorage(STORAGE_KEYS.savedCVs, defaultSavedCVs));
-  const [cvSection, setCvSection] = useState(() => readStorage(STORAGE_KEYS.activeCvSection, "dashboard"));
-  const [lastSavedAt, setLastSavedAt] = useState(() => readStorage(STORAGE_KEYS.lastSavedAt, null));
-  const [saveFeedback, setSaveFeedback] = useState("");
-
-  const [authSession, setAuthSession] = useState(() => readStorage(STORAGE_KEYS.authSession, defaultAuthSession));
-  const [authUsers, setAuthUsers] = useState(() => readStorage(STORAGE_KEYS.authUsers, defaultAuthUsers));
-  const [authMode, setAuthMode] = useState("login");
-  const [authShowPassword, setAuthShowPassword] = useState(false);
-  const [authError, setAuthError] = useState("");
-  const [authSuccess, setAuthSuccess] = useState("");
-  const [authForm, setAuthForm] = useState({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  });
-
-  const [newPost, setNewPost] = useState({
-    title: "",
-    company: "",
-    city: "",
-    contract: "Tempo indeterminato",
-  });
-
-  const [chatInput, setChatInput] = useState("");
-
-  const syncUserIntoProfile = (user) => {
-    const safeName = user?.name?.trim() || "Utente Jobly";
-    const safeEmail = user?.email?.trim() || "";
-
-    setProfile((prev) => ({
-      ...prev,
-      name: safeName,
-    }));
-
-    setCvData((prev) => ({
-      ...prev,
-      nome: safeName.split(" ")[0] || prev.nome,
-      cognome: safeName.split(" ").slice(1).join(" ") || prev.cognome,
-      email: prev.email || safeEmail,
-    }));
-  };
-
-  const persistAllData = (message = "Dati salvati") => {
-    const now = new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
-
-    localStorage.setItem(STORAGE_KEYS.theme, JSON.stringify(theme));
-    localStorage.setItem(STORAGE_KEYS.savedIds, JSON.stringify(savedIds));
-    localStorage.setItem(STORAGE_KEYS.applications, JSON.stringify(applications));
-    localStorage.setItem(STORAGE_KEYS.profile, JSON.stringify(profile));
-    localStorage.setItem(STORAGE_KEYS.jobPosts, JSON.stringify(jobPosts));
-    localStorage.setItem(STORAGE_KEYS.chat, JSON.stringify(chat));
-    localStorage.setItem(STORAGE_KEYS.cvData, JSON.stringify(cvData));
-    localStorage.setItem(STORAGE_KEYS.savedCVs, JSON.stringify(savedCVs));
-    localStorage.setItem(STORAGE_KEYS.activeTab, JSON.stringify(tab));
-    localStorage.setItem(STORAGE_KEYS.activeCvSection, JSON.stringify(cvSection));
-    localStorage.setItem(STORAGE_KEYS.lastSavedAt, JSON.stringify(now));
-    localStorage.setItem(STORAGE_KEYS.authSession, JSON.stringify(authSession));
-    localStorage.setItem(STORAGE_KEYS.authUsers, JSON.stringify(authUsers));
-
-    setLastSavedAt(now);
-    setSaveFeedback(`${message} alle ${now}`);
-
-    window.clearTimeout(window.__joblySaveTimer);
-    window.__joblySaveTimer = window.setTimeout(() => {
-      setSaveFeedback("");
-    }, 2200);
-  };
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.theme, JSON.stringify(theme));
-  }, [theme]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.savedIds, JSON.stringify(savedIds));
-  }, [savedIds]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.applications, JSON.stringify(applications));
-  }, [applications]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.profile, JSON.stringify(profile));
-  }, [profile]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.jobPosts, JSON.stringify(jobPosts));
-  }, [jobPosts]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.chat, JSON.stringify(chat));
-  }, [chat]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.cvData, JSON.stringify(cvData));
-  }, [cvData]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.savedCVs, JSON.stringify(savedCVs));
-  }, [savedCVs]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.activeTab, JSON.stringify(tab));
-  }, [tab]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.activeCvSection, JSON.stringify(cvSection));
-  }, [cvSection]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.authSession, JSON.stringify(authSession));
-  }, [authSession]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.authUsers, JSON.stringify(authUsers));
-  }, [authUsers]);
-
-  const filteredOffers = useMemo(() => {
-    return offersSeed.filter((o) => {
-      const okSearch = !search || [o.title, o.company, o.city, o.zone, o.category].join(" ").toLowerCase().includes(search.toLowerCase());
-      const okCity = city === "all" || o.city === city;
-      const okContract = contract === "all" || o.contract === contract;
-      const okDistance = o.distance <= Number(maxDistance);
-      return okSearch && okCity && okContract && okDistance;
-    });
-  }, [search, city, contract, maxDistance]);
-
-  const profileCompletion = useMemo(() => {
-    let score = 0;
-    if (profile.name) score += 20;
-    if (profile.role) score += 20;
-    if (profile.city) score += 20;
-    if (profile.bio) score += 20;
-    if (profile.skills) score += 10;
-    if (profile.cvName) score += 10;
-    return score;
-  }, [profile]);
-
-  const cvCompletion = useMemo(() => {
-    let score = 0;
-    if (cvData.nome) score += 10;
-    if (cvData.cognome) score += 10;
-    if (cvData.email) score += 10;
-    if (cvData.telefono) score += 10;
-    if (cvData.ruolo) score += 15;
-    if (cvData.profilo) score += 15;
-    if (cvData.esperienze.some((x) => x.ruolo || x.azienda || x.descrizione)) score += 15;
-    if (cvData.competenze.length > 0) score += 15;
-    if (cvData.formazione.some((x) => x.titolo || x.istituto)) score += 10;
-    return Math.min(score, 100);
-  }, [cvData]);
-
-  const missingCVItems = useMemo(() => {
-    const items = [];
-    if (!cvData.email) items.push("email");
-    if (!cvData.telefono) items.push("telefono");
-    if (!cvData.formazione.some((x) => x.titolo || x.istituto)) items.push("formazione");
-    if (!cvData.jobDescription) items.push("annuncio per adattamento");
-    return items;
-  }, [cvData]);
-
-  const applyToOffer = (offer) => {
-    const exists = applications.some((a) => a.title === offer.title && a.company === offer.company);
-    if (!exists) {
-      setApplications((prev) => [
-        { id: Date.now(), title: offer.title, company: offer.company, status: "Inviata" },
-        ...prev,
-      ]);
-    }
-  };
-
-  const toggleSave = (id) => {
-    setSavedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-  };
-
-  const sendChat = () => {
-    if (!chatInput.trim()) return;
-    const userMsg = chatInput.trim();
-    setChat((prev) => [...prev, { who: "user", text: userMsg }, { who: "ai", text: aiReply(userMsg) }]);
-    setChatInput("");
-  };
-
-  const addPost = () => {
-    if (!newPost.title || !newPost.company || !newPost.city) return;
-    setJobPosts((prev) => [newPost, ...prev]);
-    setNewPost({ title: "", company: "", city: "", contract: "Tempo indeterminato" });
-    persistAllData("Offerta salvata");
-  };
-
-  const handleGoToCVFromOffer = (offer) => {
-    const generatedJD = `${offer.title} presso ${offer.company}. Sede: ${offer.city}, ${offer.zone}. Contratto: ${offer.contract}. Modalità: ${offer.remote}. Fascia retributiva: ${offer.salary}.`;
-    setCvData((prev) => ({ ...prev, jobDescription: generatedJD }));
-    setTab("cv");
-    setCvSection("match");
-  };
-
-  const generateProfileAI = () => {
-    setCvData((prev) => ({
-      ...prev,
-      profilo:
-        "Professionista con esperienza in back office, gestione ordini e supporto clienti. Abituato a operare con precisione su processi amministrativi e operativi, con attenzione alla qualità del servizio, all’uso di strumenti gestionali e al rispetto delle priorità aziendali.",
-    }));
-  };
-
-  const improveExperienceAI = () => {
-    setCvData((prev) => {
-      if (prev.esperienze.length === 0) return prev;
-      const updated = [...prev.esperienze];
-      updated[0] = {
-        ...updated[0],
-        descrizione:
-          "Gestione operativa delle richieste cliente, aggiornamento dati su gestionale, supporto ai flussi di back office e monitoraggio dello stato delle pratiche, con attenzione alla precisione, alle tempistiche e alla continuità del servizio.",
-      };
-      return { ...prev, esperienze: updated };
-    });
-  };
-
-  const suggestSkillsAI = () => {
-    setCvData((prev) => ({
-      ...prev,
-      competenze: [
-        "SAP",
-        "Excel",
-        "Back Office",
-        "Gestione ordini",
-        "Customer Care",
-        "Ticketing",
-        "Data entry",
-        "Precisione operativa",
-        "Problem solving",
-        "Coordinamento attività",
-      ],
-    }));
-  };
-
-  const adaptCVAI = () => {
-    setCvData((prev) => ({
-      ...prev,
-      profilo:
-        "Profilo orientato a ruoli di back office e order management, con esperienza nel supporto operativo, nell’aggiornamento dati e nella gestione di attività amministrative e customer-facing. Forte attenzione all’accuratezza, alla continuità del servizio e all’utilizzo di strumenti gestionali.",
-      competenze: [
-        "Gestione ordini",
-        "SAP",
-        "Excel",
-        "Back Office",
-        "Customer Support",
-        "Data entry",
-        "Precisione operativa",
-        "Monitoraggio pratiche",
-        "Comunicazione con clienti e reparti interni",
-      ],
-    }));
-  };
-
-  const generateCoverLetterAI = () => {
-    setCvData((prev) => ({
-      ...prev,
-      coverLetter:
-        "Gentile Recruiter,\n\nho letto con interesse la vostra opportunità e desidero sottoporre la mia candidatura. Nel mio percorso ho maturato esperienza in attività di back office, gestione ordini, aggiornamento dati e supporto clienti, sviluppando precisione operativa, attenzione alle priorità e capacità di lavorare in modo affidabile su processi strutturati.\n\nRitengo che il mio profilo possa essere in linea con il ruolo ricercato e sarei interessato ad approfondire il contributo che potrei portare alla vostra realtà.\n\nCordiali saluti.",
-    }));
-  };
-
-  const saveCurrentCV = () => {
-    const newCV = {
-      id: Date.now(),
-      name: `${cvData.nome || "CV"}_${cvData.ruolo?.replaceAll("/", "-") || "Nuovo"}.pdf`,
-      role: cvData.ruolo || "Ruolo non specificato",
-      updated: "Adesso",
-      status: cvCompletion >= 80 ? "Completo" : "Bozza",
-    };
-    setSavedCVs((prev) => [newCV, ...prev]);
-    setProfile((prev) => ({ ...prev, cvName: newCV.name }));
-    persistAllData("CV salvato");
-  };
-
-  const openCVSection = (section) => {
-    setTab("cv");
-    setCvSection(section);
-  };
-
-  const addExperience = () => {
-    setCvData((prev) => ({
-      ...prev,
-      esperienze: [
-        ...prev.esperienze,
-        {
-          id: Date.now(),
-          ruolo: "",
-          azienda: "",
-          periodo: "",
-          descrizione: "",
-        },
-      ],
-    }));
-  };
-
-  const updateExperience = (id, field, value) => {
-    setCvData((prev) => ({
-      ...prev,
-      esperienze: prev.esperienze.map((exp) => (exp.id === id ? { ...exp, [field]: value } : exp)),
-    }));
-  };
-
-  const removeExperience = (id) => {
-    setCvData((prev) => ({
-      ...prev,
-      esperienze: prev.esperienze.filter((exp) => exp.id !== id),
-    }));
-  };
-
-  const addEducation = () => {
-    setCvData((prev) => ({
-      ...prev,
-      formazione: [
-        ...prev.formazione,
-        {
-          id: Date.now(),
-          titolo: "",
-          istituto: "",
-          periodo: "",
-          descrizione: "",
-        },
-      ],
-    }));
-  };
-
-  const updateEducation = (id, field, value) => {
-    setCvData((prev) => ({
-      ...prev,
-      formazione: prev.formazione.map((edu) => (edu.id === id ? { ...edu, [field]: value } : edu)),
-    }));
-  };
-
-  const removeEducation = (id) => {
-    setCvData((prev) => ({
-      ...prev,
-      formazione: prev.formazione.filter((edu) => edu.id !== id),
-    }));
-  };
-
-  const addSkill = () => {
-    const skill = cvData.newSkill.trim();
-    if (!skill) return;
-    if (cvData.competenze.includes(skill)) {
-      setCvData((prev) => ({ ...prev, newSkill: "" }));
-      return;
-    }
-    setCvData((prev) => ({
-      ...prev,
-      competenze: [...prev.competenze, skill],
-      newSkill: "",
-    }));
-  };
-
-  const removeSkill = (skillToRemove) => {
-    setCvData((prev) => ({
-      ...prev,
-      competenze: prev.competenze.filter((skill) => skill !== skillToRemove),
-    }));
-  };
-
-  const clearLocalData = () => {
-    Object.values(STORAGE_KEYS).forEach((key) => localStorage.removeItem(key));
-    window.location.reload();
-  };
-
-  const handleLogin = () => {
-    setAuthError("");
-    setAuthSuccess("");
-
-    const email = authForm.email.trim().toLowerCase();
-    const password = authForm.password.trim();
-
-    if (!email || !password) {
-      setAuthError("Inserisci email e password.");
-      return;
-    }
-
-    const user = authUsers.find((u) => u.email === email);
-    if (!user) {
-      setAuthError("Nessun account trovato con questa email.");
-      return;
-    }
-
-    if (user.password !== password) {
-      setAuthError("Password non corretta.");
-      return;
-    }
-
-    const session = {
-      isAuthenticated: true,
-      email: user.email,
-      name: user.name || "Utente Jobly",
-      mode: "account",
-      isDemo: false,
-    };
-
-    setAuthSession(session);
-    syncUserIntoProfile(user);
-    setAuthSuccess("Accesso effettuato.");
-    setAuthForm({ name: "", email: "", password: "", confirmPassword: "" });
-  };
-
-  const handleRegister = () => {
-    setAuthError("");
-    setAuthSuccess("");
-
-    const name = authForm.name.trim();
-    const email = authForm.email.trim().toLowerCase();
-    const password = authForm.password.trim();
-    const confirmPassword = authForm.confirmPassword.trim();
-
-    if (!name || !email || !password || !confirmPassword) {
-      setAuthError("Compila tutti i campi.");
-      return;
-    }
-
-    if (!email.includes("@") || !email.includes(".")) {
-      setAuthError("Inserisci una email valida.");
-      return;
-    }
-
-    if (password.length < 6) {
-      setAuthError("La password deve avere almeno 6 caratteri.");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setAuthError("Le password non coincidono.");
-      return;
-    }
-
-    if (authUsers.some((u) => u.email === email)) {
-      setAuthError("Esiste già un account con questa email.");
-      return;
-    }
-
-    const newUser = {
-      id: Date.now(),
-      name,
-      email,
-      password,
-      createdAt: new Date().toISOString(),
-    };
-
-    setAuthUsers((prev) => [...prev, newUser]);
-
-    const session = {
-      isAuthenticated: true,
-      email,
-      name,
-      mode: "account",
-      isDemo: false,
-    };
-
-    setAuthSession(session);
-    syncUserIntoProfile(newUser);
-    setAuthSuccess("Account creato con successo.");
-    setAuthForm({ name: "", email: "", password: "", confirmPassword: "" });
-  };
-
-  const handleForgotPassword = () => {
-    setAuthError("");
-    setAuthSuccess("");
-
-    const email = authForm.email.trim().toLowerCase();
-    if (!email) {
-      setAuthError("Inserisci la tua email.");
-      return;
-    }
-
-    const user = authUsers.find((u) => u.email === email);
-    if (!user) {
-      setAuthError("Nessun account trovato con questa email.");
-      return;
-    }
-
-    setAuthSuccess(`Richiesta registrata per ${email}. Per ora è una simulazione locale.`);
-  };
-
-  const enterDemo = () => {
-    setAuthError("");
-    setAuthSuccess("");
-
-    const demoSession = {
-      isAuthenticated: true,
-      email: "demo@jobly.local",
-      name: "Demo User",
-      mode: "demo",
-      isDemo: true,
-    };
-
-    setAuthSession(demoSession);
-    syncUserIntoProfile({ name: "Demo User", email: "demo@jobly.local" });
-  };
-
-  const handleLogout = () => {
-    setAuthSession(defaultAuthSession);
-    setAuthMode("login");
-    setAuthForm({
-      name: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-    });
-    setAuthError("");
-    setAuthSuccess("");
-  };
-
-  if (!authSession.isAuthenticated) {
-    return (
-      <AuthScreen
-        theme={theme}
-        authMode={authMode}
-        setAuthMode={setAuthMode}
-        authForm={authForm}
-        setAuthForm={setAuthForm}
-        authError={authError}
-        authSuccess={authSuccess}
-        authShowPassword={authShowPassword}
-        setAuthShowPassword={setAuthShowPassword}
-        handleLogin={handleLogin}
-        handleRegister={handleRegister}
-        handleForgotPassword={handleForgotPassword}
-        enterDemo={enterDemo}
-      />
-    );
-  }
-
+function AppContent({
+  tab,
+  setTab,
+  theme,
+  setTheme,
+  search,
+  setSearch,
+  city,
+  setCity,
+  contract,
+  setContract,
+  maxDistance,
+  setMaxDistance,
+  savedIds,
+  applications,
+  profile,
+  setProfile,
+  jobPosts,
+  chat,
+  cvData,
+  setCvData,
+  savedCVs,
+  cvSection,
+  setCvSection,
+  lastSavedAt,
+  saveFeedback,
+  authSession,
+  newPost,
+  setNewPost,
+  chatInput,
+  setChatInput,
+  filteredOffers,
+  profileCompletion,
+  cvCompletion,
+  missingCVItems,
+  applyToOffer,
+  toggleSave,
+  sendChat,
+  addPost,
+  handleGoToCVFromOffer,
+  generateProfileAI,
+  improveExperienceAI,
+  suggestSkillsAI,
+  adaptCVAI,
+  generateCoverLetterAI,
+  saveCurrentCV,
+  openCVSection,
+  addExperience,
+  updateExperience,
+  removeExperience,
+  addEducation,
+  updateEducation,
+  removeEducation,
+  addSkill,
+  removeSkill,
+  clearImportedCv,
+  applyImportedCvToStudio,
+  handleImportCvFile,
+  clearLocalData,
+  handleLogout,
+  persistAllData,
+  fileInputRef,
+}) {
   return (
     <div className={`app-shell ${theme === "dark" ? "theme-dark" : "theme-light"}`}>
       <header className="topbar">
@@ -1487,7 +1043,7 @@ export default function JoblyApp() {
               <div className="section-head">
                 <div>
                   <h2>CV Studio</h2>
-                  <p>Costruisci, migliora e adatta il tuo CV con un flusso dedicato.</p>
+                  <p>Costruisci, migliora, importa e adatta il tuo CV con un flusso dedicato.</p>
                 </div>
                 <div className="muted">Completamento CV {cvCompletion}%</div>
               </div>
@@ -1534,12 +1090,19 @@ export default function JoblyApp() {
 
                   <div className="stack">
                     <CVActionCard
+                      icon={<Upload size={18} color="#ef4444" />}
+                      title="Importa il tuo CV"
+                      desc="Carica un PDF, DOC, DOCX o TXT e usalo come base dentro CV Studio."
+                      buttonLabel="Importa ora"
+                      onClick={() => setCvSection("create")}
+                      red
+                    />
+                    <CVActionCard
                       icon={<FileText size={18} color="#ef4444" />}
                       title="Crea nuovo CV"
                       desc="Parti da zero con dati personali, profilo, esperienze, formazione e competenze."
                       buttonLabel="Inizia"
                       onClick={() => setCvSection("create")}
-                      red
                     />
                     <CVActionCard
                       icon={<Wand2 size={18} color="#ef4444" />}
@@ -1575,6 +1138,7 @@ export default function JoblyApp() {
                         <Badge>{cvData.profilo ? "Profilo" : "Profilo mancante"}</Badge>
                         <Badge>{cvData.esperienze.some((x) => x.ruolo || x.azienda) ? "Esperienze" : "Esperienze mancanti"}</Badge>
                         <Badge>{cvData.competenze.length > 0 ? "Competenze" : "Competenze mancanti"}</Badge>
+                        <Badge>{cvData.importedFile?.name ? "CV importato" : "Nessun file importato"}</Badge>
                       </div>
                     </div>
 
@@ -1588,9 +1152,9 @@ export default function JoblyApp() {
                     </div>
 
                     <div className="inner-box">
-                      <div className="section-label">Suggerimento AI</div>
+                      <div className="section-label">Stato importazione</div>
                       <p className="meta-text small">
-                        Per aumentare il valore del CV, aggiungi una formazione più precisa e usa risultati concreti nelle esperienze.
+                        {cvData.importedStatus || "Nessun CV importato al momento."}
                       </p>
                     </div>
 
@@ -1671,13 +1235,87 @@ export default function JoblyApp() {
               <div className="two-col">
                 <Card>
                   <div className="actions" style={{ justifyContent: "space-between", marginTop: 0, marginBottom: 16 }}>
-                    <h3 style={{ margin: 0 }}>Crea il tuo CV</h3>
+                    <h3 style={{ margin: 0 }}>Crea o importa il tuo CV</h3>
                     <Button className="btn-dark" onClick={() => persistAllData("Sezione Crea CV salvata")}>
                       <Save size={16} /> Salva
                     </Button>
                   </div>
 
                   <div className="stack">
+                    <div className="inner-box">
+                      <div className="title-row">
+                        <Upload size={16} color="#ef4444" />
+                        <div className="section-label">Importa CV dal dispositivo</div>
+                      </div>
+
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".pdf,.doc,.docx,.txt"
+                        onChange={handleImportCvFile}
+                        style={{ display: "none" }}
+                      />
+
+                      <div className="actions">
+                        <Button className="btn-red" onClick={() => fileInputRef.current?.click()}>
+                          <Upload size={16} /> Carica CV
+                        </Button>
+                        {cvData.importedFile?.name && (
+                          <Button className="btn-dark" onClick={applyImportedCvToStudio}>
+                            <FileText size={16} /> Usa come base
+                          </Button>
+                        )}
+                        {cvData.importedFile?.name && (
+                          <Button className="btn-dark" onClick={clearImportedCv}>
+                            <Trash2 size={16} /> Rimuovi import
+                          </Button>
+                        )}
+                      </div>
+
+                      <div style={{ marginTop: 14 }}>
+                        {cvData.importedFile?.name ? (
+                          <div className="inner-box">
+                            <div className="offer-title">{cvData.importedFile.name}</div>
+                            <div className="meta-text small">Tipo: {cvData.importedFile.type || "Non rilevato"}</div>
+                            <div className="meta-text small">Dimensione: {formatFileSize(cvData.importedFile.size)}</div>
+                          </div>
+                        ) : (
+                          <p className="meta-text small">Nessun file caricato. Supporto attuale: PDF, DOC, DOCX, TXT.</p>
+                        )}
+                      </div>
+
+                      <div style={{ marginTop: 12 }}>
+                        <div className="section-label">Stato importazione</div>
+                        <p className="meta-text small">
+                          {cvData.importedStatus || "Carica un file per iniziare."}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="inner-box">
+                      <div className="title-row">
+                        <FileText size={16} color="#ef4444" />
+                        <div className="section-label">Testo CV manuale</div>
+                      </div>
+                      <Textarea
+                        value={cvData.importedManualText}
+                        onChange={(e) => setCvData({ ...cvData, importedManualText: e.target.value })}
+                        placeholder="Incolla qui il testo del tuo CV per usarlo come base nell'editor"
+                      />
+                      <div className="actions">
+                        <Button className="btn-dark" onClick={applyImportedCvToStudio}>
+                          <FileText size={16} /> Usa testo importato
+                        </Button>
+                      </div>
+                    </div>
+
+                    {cvData.importedText ? (
+                      <div className="inner-box">
+                        <div className="section-label">Testo letto dal file</div>
+                        <Textarea value={cvData.importedText} readOnly />
+                      </div>
+                    ) : null}
+
                     <div className="inner-box">
                       <div className="title-row">
                         <User size={16} color="#ef4444" />
@@ -1890,6 +1528,15 @@ export default function JoblyApp() {
                         ))}
                       </div>
                     </div>
+
+                    {cvData.importedFile?.name ? (
+                      <div className="inner-box">
+                        <div className="section-label">CV importato</div>
+                        <div className="file-box">
+                          <FileText size={16} color="#ef4444" /> {cvData.importedFile.name}
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
                 </Card>
               </div>
@@ -1934,6 +1581,13 @@ export default function JoblyApp() {
                           </div>
                         ))}
                       </div>
+                    </div>
+
+                    <div className="inner-box">
+                      <div className="section-label">Testo importato</div>
+                      <p className="meta-text small">
+                        {cvData.importedStatus || "Nessun contenuto importato disponibile."}
+                      </p>
                     </div>
                   </div>
                 </Card>
@@ -2079,6 +1733,7 @@ export default function JoblyApp() {
                 <div className="inner-box">Aiuta recruiter a scrivere annunci più chiari.</div>
                 <div className="inner-box">Spiega perché un’offerta è coerente con il tuo profilo.</div>
                 <div className="inner-box">Collega la candidatura alla sezione CV Studio per adattare il curriculum.</div>
+                <div className="inner-box">Permette di importare un CV reale come base di lavoro.</div>
               </div>
             </Card>
 
@@ -2109,8 +1764,707 @@ export default function JoblyApp() {
       </main>
 
       <footer className="footer">
-        Jobly — front-end pronto per Render. Backend, database e autenticazione verranno collegati dopo.
+        Jobly — front-end pronto per Render. Import CV reale attivo, parsing avanzato in arrivo.
       </footer>
     </div>
+  );
+}
+
+export default function JoblyApp() {
+  const fileInputRef = useRef(null);
+
+  const [tab, setTab] = useState(() => readStorage(STORAGE_KEYS.activeTab, "offerte"));
+  const [theme, setTheme] = useState(() => readStorage(STORAGE_KEYS.theme, "dark"));
+
+  const [search, setSearch] = useState("");
+  const [city, setCity] = useState("all");
+  const [contract, setContract] = useState("all");
+  const [maxDistance, setMaxDistance] = useState("30");
+
+  const [savedIds, setSavedIds] = useState(() => readStorage(STORAGE_KEYS.savedIds, [1]));
+  const [applications, setApplications] = useState(() => readStorage(STORAGE_KEYS.applications, defaultApplications));
+  const [profile, setProfile] = useState(() => readStorage(STORAGE_KEYS.profile, defaultProfile));
+  const [jobPosts, setJobPosts] = useState(() => readStorage(STORAGE_KEYS.jobPosts, defaultJobPosts));
+  const [chat, setChat] = useState(() => readStorage(STORAGE_KEYS.chat, defaultChat));
+  const [cvData, setCvData] = useState(() => readStorage(STORAGE_KEYS.cvData, defaultCvData));
+  const [savedCVs, setSavedCVs] = useState(() => readStorage(STORAGE_KEYS.savedCVs, defaultSavedCVs));
+  const [cvSection, setCvSection] = useState(() => readStorage(STORAGE_KEYS.activeCvSection, "dashboard"));
+  const [lastSavedAt, setLastSavedAt] = useState(() => readStorage(STORAGE_KEYS.lastSavedAt, null));
+  const [saveFeedback, setSaveFeedback] = useState("");
+
+  const [authSession, setAuthSession] = useState(() => readStorage(STORAGE_KEYS.authSession, defaultAuthSession));
+  const [authUsers, setAuthUsers] = useState(() => readStorage(STORAGE_KEYS.authUsers, defaultAuthUsers));
+  const [authMode, setAuthMode] = useState("login");
+  const [authShowPassword, setAuthShowPassword] = useState(false);
+  const [authError, setAuthError] = useState("");
+  const [authSuccess, setAuthSuccess] = useState("");
+  const [authForm, setAuthForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+
+  const [newPost, setNewPost] = useState({
+    title: "",
+    company: "",
+    city: "",
+    contract: "Tempo indeterminato",
+  });
+
+  const [chatInput, setChatInput] = useState("");
+
+  const syncUserIntoProfile = (user) => {
+    const safeName = user?.name?.trim() || "Utente Jobly";
+    const safeEmail = user?.email?.trim() || "";
+
+    setProfile((prev) => ({
+      ...prev,
+      name: safeName,
+    }));
+
+    setCvData((prev) => ({
+      ...prev,
+      nome: safeName.split(" ")[0] || prev.nome,
+      cognome: safeName.split(" ").slice(1).join(" ") || prev.cognome,
+      email: prev.email || safeEmail,
+    }));
+  };
+
+  const persistAllData = (message = "Dati salvati") => {
+    const now = new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+
+    localStorage.setItem(STORAGE_KEYS.theme, JSON.stringify(theme));
+    localStorage.setItem(STORAGE_KEYS.savedIds, JSON.stringify(savedIds));
+    localStorage.setItem(STORAGE_KEYS.applications, JSON.stringify(applications));
+    localStorage.setItem(STORAGE_KEYS.profile, JSON.stringify(profile));
+    localStorage.setItem(STORAGE_KEYS.jobPosts, JSON.stringify(jobPosts));
+    localStorage.setItem(STORAGE_KEYS.chat, JSON.stringify(chat));
+    localStorage.setItem(STORAGE_KEYS.cvData, JSON.stringify(cvData));
+    localStorage.setItem(STORAGE_KEYS.savedCVs, JSON.stringify(savedCVs));
+    localStorage.setItem(STORAGE_KEYS.activeTab, JSON.stringify(tab));
+    localStorage.setItem(STORAGE_KEYS.activeCvSection, JSON.stringify(cvSection));
+    localStorage.setItem(STORAGE_KEYS.lastSavedAt, JSON.stringify(now));
+    localStorage.setItem(STORAGE_KEYS.authSession, JSON.stringify(authSession));
+    localStorage.setItem(STORAGE_KEYS.authUsers, JSON.stringify(authUsers));
+
+    setLastSavedAt(now);
+    setSaveFeedback(`${message} alle ${now}`);
+
+    window.clearTimeout(window.__joblySaveTimer);
+    window.__joblySaveTimer = window.setTimeout(() => {
+      setSaveFeedback("");
+    }, 2200);
+  };
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.theme, JSON.stringify(theme));
+  }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.savedIds, JSON.stringify(savedIds));
+  }, [savedIds]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.applications, JSON.stringify(applications));
+  }, [applications]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.profile, JSON.stringify(profile));
+  }, [profile]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.jobPosts, JSON.stringify(jobPosts));
+  }, [jobPosts]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.chat, JSON.stringify(chat));
+  }, [chat]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.cvData, JSON.stringify(cvData));
+  }, [cvData]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.savedCVs, JSON.stringify(savedCVs));
+  }, [savedCVs]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.activeTab, JSON.stringify(tab));
+  }, [tab]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.activeCvSection, JSON.stringify(cvSection));
+  }, [cvSection]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.authSession, JSON.stringify(authSession));
+  }, [authSession]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.authUsers, JSON.stringify(authUsers));
+  }, [authUsers]);
+
+  const filteredOffers = useMemo(() => {
+    return offersSeed.filter((o) => {
+      const okSearch = !search || [o.title, o.company, o.city, o.zone, o.category].join(" ").toLowerCase().includes(search.toLowerCase());
+      const okCity = city === "all" || o.city === city;
+      const okContract = contract === "all" || o.contract === contract;
+      const okDistance = o.distance <= Number(maxDistance);
+      return okSearch && okCity && okContract && okDistance;
+    });
+  }, [search, city, contract, maxDistance]);
+
+  const profileCompletion = useMemo(() => {
+    let score = 0;
+    if (profile.name) score += 20;
+    if (profile.role) score += 20;
+    if (profile.city) score += 20;
+    if (profile.bio) score += 20;
+    if (profile.skills) score += 10;
+    if (profile.cvName) score += 10;
+    return score;
+  }, [profile]);
+
+  const cvCompletion = useMemo(() => {
+    let score = 0;
+    if (cvData.nome) score += 10;
+    if (cvData.cognome) score += 10;
+    if (cvData.email) score += 10;
+    if (cvData.telefono) score += 10;
+    if (cvData.ruolo) score += 15;
+    if (cvData.profilo) score += 15;
+    if (cvData.esperienze.some((x) => x.ruolo || x.azienda || x.descrizione)) score += 15;
+    if (cvData.competenze.length > 0) score += 15;
+    if (cvData.formazione.some((x) => x.titolo || x.istituto)) score += 10;
+    if (cvData.importedFile?.name) score += 5;
+    return Math.min(score, 100);
+  }, [cvData]);
+
+  const missingCVItems = useMemo(() => {
+    const items = [];
+    if (!cvData.email) items.push("email");
+    if (!cvData.telefono) items.push("telefono");
+    if (!cvData.formazione.some((x) => x.titolo || x.istituto)) items.push("formazione");
+    if (!cvData.jobDescription) items.push("annuncio per adattamento");
+    return items;
+  }, [cvData]);
+
+  const applyToOffer = (offer) => {
+    const exists = applications.some((a) => a.title === offer.title && a.company === offer.company);
+    if (!exists) {
+      setApplications((prev) => [
+        { id: Date.now(), title: offer.title, company: offer.company, status: "Inviata" },
+        ...prev,
+      ]);
+    }
+  };
+
+  const toggleSave = (id) => {
+    setSavedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+
+  const sendChat = () => {
+    if (!chatInput.trim()) return;
+    const userMsg = chatInput.trim();
+    setChat((prev) => [...prev, { who: "user", text: userMsg }, { who: "ai", text: aiReply(userMsg) }]);
+    setChatInput("");
+  };
+
+  const addPost = () => {
+    if (!newPost.title || !newPost.company || !newPost.city) return;
+    setJobPosts((prev) => [newPost, ...prev]);
+    setNewPost({ title: "", company: "", city: "", contract: "Tempo indeterminato" });
+    persistAllData("Offerta salvata");
+  };
+
+  const handleGoToCVFromOffer = (offer) => {
+    const generatedJD = `${offer.title} presso ${offer.company}. Sede: ${offer.city}, ${offer.zone}. Contratto: ${offer.contract}. Modalità: ${offer.remote}. Fascia retributiva: ${offer.salary}.`;
+    setCvData((prev) => ({ ...prev, jobDescription: generatedJD }));
+    setTab("cv");
+    setCvSection("match");
+  };
+
+  const generateProfileAI = () => {
+    setCvData((prev) => ({
+      ...prev,
+      profilo:
+        "Professionista con esperienza in back office, gestione ordini e supporto clienti. Abituato a operare con precisione su processi amministrativi e operativi, con attenzione alla qualità del servizio, all’uso di strumenti gestionali e al rispetto delle priorità aziendali.",
+    }));
+  };
+
+  const improveExperienceAI = () => {
+    setCvData((prev) => {
+      if (prev.esperienze.length === 0) return prev;
+      const updated = [...prev.esperienze];
+      updated[0] = {
+        ...updated[0],
+        descrizione:
+          "Gestione operativa delle richieste cliente, aggiornamento dati su gestionale, supporto ai flussi di back office e monitoraggio dello stato delle pratiche, con attenzione alla precisione, alle tempistiche e alla continuità del servizio.",
+      };
+      return { ...prev, esperienze: updated };
+    });
+  };
+
+  const suggestSkillsAI = () => {
+    setCvData((prev) => ({
+      ...prev,
+      competenze: [
+        "SAP",
+        "Excel",
+        "Back Office",
+        "Gestione ordini",
+        "Customer Care",
+        "Ticketing",
+        "Data entry",
+        "Precisione operativa",
+        "Problem solving",
+        "Coordinamento attività",
+      ],
+    }));
+  };
+
+  const adaptCVAI = () => {
+    setCvData((prev) => ({
+      ...prev,
+      profilo:
+        "Profilo orientato a ruoli di back office e order management, con esperienza nel supporto operativo, nell’aggiornamento dati e nella gestione di attività amministrative e customer-facing. Forte attenzione all’accuratezza, alla continuità del servizio e all’utilizzo di strumenti gestionali.",
+      competenze: [
+        "Gestione ordini",
+        "SAP",
+        "Excel",
+        "Back Office",
+        "Customer Support",
+        "Data entry",
+        "Precisione operativa",
+        "Monitoraggio pratiche",
+        "Comunicazione con clienti e reparti interni",
+      ],
+    }));
+  };
+
+  const generateCoverLetterAI = () => {
+    setCvData((prev) => ({
+      ...prev,
+      coverLetter:
+        "Gentile Recruiter,\n\nho letto con interesse la vostra opportunità e desidero sottoporre la mia candidatura. Nel mio percorso ho maturato esperienza in attività di back office, gestione ordini, aggiornamento dati e supporto clienti, sviluppando precisione operativa, attenzione alle priorità e capacità di lavorare in modo affidabile su processi strutturati.\n\nRitengo che il mio profilo possa essere in linea con il ruolo ricercato e sarei interessato ad approfondire il contributo che potrei portare alla vostra realtà.\n\nCordiali saluti.",
+    }));
+  };
+
+  const saveCurrentCV = () => {
+    const newCV = {
+      id: Date.now(),
+      name: `${cvData.nome || "CV"}_${cvData.ruolo?.replaceAll("/", "-") || "Nuovo"}.pdf`,
+      role: cvData.ruolo || "Ruolo non specificato",
+      updated: "Adesso",
+      status: cvCompletion >= 80 ? "Completo" : "Bozza",
+    };
+    setSavedCVs((prev) => [newCV, ...prev]);
+    setProfile((prev) => ({ ...prev, cvName: newCV.name }));
+    persistAllData("CV salvato");
+  };
+
+  const openCVSection = (section) => {
+    setTab("cv");
+    setCvSection(section);
+  };
+
+  const addExperience = () => {
+    setCvData((prev) => ({
+      ...prev,
+      esperienze: [
+        ...prev.esperienze,
+        {
+          id: Date.now(),
+          ruolo: "",
+          azienda: "",
+          periodo: "",
+          descrizione: "",
+        },
+      ],
+    }));
+  };
+
+  const updateExperience = (id, field, value) => {
+    setCvData((prev) => ({
+      ...prev,
+      esperienze: prev.esperienze.map((exp) => (exp.id === id ? { ...exp, [field]: value } : exp)),
+    }));
+  };
+
+  const removeExperience = (id) => {
+    setCvData((prev) => ({
+      ...prev,
+      esperienze: prev.esperienze.filter((exp) => exp.id !== id),
+    }));
+  };
+
+  const addEducation = () => {
+    setCvData((prev) => ({
+      ...prev,
+      formazione: [
+        ...prev.formazione,
+        {
+          id: Date.now(),
+          titolo: "",
+          istituto: "",
+          periodo: "",
+          descrizione: "",
+        },
+      ],
+    }));
+  };
+
+  const updateEducation = (id, field, value) => {
+    setCvData((prev) => ({
+      ...prev,
+      formazione: prev.formazione.map((edu) => (edu.id === id ? { ...edu, [field]: value } : edu)),
+    }));
+  };
+
+  const removeEducation = (id) => {
+    setCvData((prev) => ({
+      ...prev,
+      formazione: prev.formazione.filter((edu) => edu.id !== id),
+    }));
+  };
+
+  const addSkill = () => {
+    const skill = cvData.newSkill.trim();
+    if (!skill) return;
+    if (cvData.competenze.includes(skill)) {
+      setCvData((prev) => ({ ...prev, newSkill: "" }));
+      return;
+    }
+    setCvData((prev) => ({
+      ...prev,
+      competenze: [...prev.competenze, skill],
+      newSkill: "",
+    }));
+  };
+
+  const removeSkill = (skillToRemove) => {
+    setCvData((prev) => ({
+      ...prev,
+      competenze: prev.competenze.filter((skill) => skill !== skillToRemove),
+    }));
+  };
+
+  const clearImportedCv = () => {
+    setCvData((prev) => ({
+      ...prev,
+      importedFile: null,
+      importedText: "",
+      importedStatus: "",
+      importedManualText: "",
+    }));
+  };
+
+  const applyImportedCvToStudio = () => {
+    const sourceText = (cvData.importedManualText || cvData.importedText || "").trim();
+
+    setProfile((prev) => ({
+      ...prev,
+      cvName: cvData.importedFile?.name || prev.cvName,
+    }));
+
+    setCvData((prev) => ({
+      ...prev,
+      profilo: sourceText ? sourceText.slice(0, 700) : prev.profilo,
+      ruolo: prev.ruolo || "Profilo importato",
+      importedStatus: prev.importedFile
+        ? `CV ${prev.importedFile.name} usato come base nell’editor.`
+        : "Testo CV importato nell’editor.",
+    }));
+
+    persistAllData("CV importato applicato");
+  };
+
+  const handleImportCvFile = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const allowedExtensions = [".pdf", ".doc", ".docx", ".txt"];
+    const lowerName = file.name.toLowerCase();
+    const isAllowed = allowedExtensions.some((ext) => lowerName.endsWith(ext));
+
+    if (!isAllowed) {
+      setCvData((prev) => ({
+        ...prev,
+        importedStatus: "Formato non supportato. Usa PDF, DOC, DOCX o TXT.",
+      }));
+      return;
+    }
+
+    const importedFile = {
+      name: file.name,
+      size: file.size,
+      type: file.type || "Formato non riconosciuto",
+      lastModified: file.lastModified,
+    };
+
+    if (lowerName.endsWith(".txt")) {
+      try {
+        const text = await file.text();
+        setCvData((prev) => ({
+          ...prev,
+          importedFile,
+          importedText: text,
+          importedStatus: `File ${file.name} importato. Testo letto correttamente.`,
+        }));
+        persistAllData("CV TXT importato");
+      } catch {
+        setCvData((prev) => ({
+          ...prev,
+          importedFile,
+          importedText: "",
+          importedStatus: `File ${file.name} caricato, ma il testo non è stato letto correttamente.`,
+        }));
+      }
+      return;
+    }
+
+    setCvData((prev) => ({
+      ...prev,
+      importedFile,
+      importedText: "",
+      importedStatus:
+        `File ${file.name} caricato correttamente. Il parsing completo di PDF/DOC/DOCX verrà aggiunto nel passo successivo.`,
+    }));
+    persistAllData("CV caricato");
+  };
+
+  const clearLocalData = () => {
+    Object.values(STORAGE_KEYS).forEach((key) => localStorage.removeItem(key));
+    window.location.reload();
+  };
+
+  const handleLogin = () => {
+    setAuthError("");
+    setAuthSuccess("");
+
+    const email = authForm.email.trim().toLowerCase();
+    const password = authForm.password.trim();
+
+    if (!email || !password) {
+      setAuthError("Inserisci email e password.");
+      return;
+    }
+
+    const user = authUsers.find((u) => u.email === email);
+    if (!user) {
+      setAuthError("Nessun account trovato con questa email.");
+      return;
+    }
+
+    if (user.password !== password) {
+      setAuthError("Password non corretta.");
+      return;
+    }
+
+    const session = {
+      isAuthenticated: true,
+      email: user.email,
+      name: user.name || "Utente Jobly",
+      mode: "account",
+      isDemo: false,
+    };
+
+    setAuthSession(session);
+    syncUserIntoProfile(user);
+    setAuthSuccess("Accesso effettuato.");
+    setAuthForm({ name: "", email: "", password: "", confirmPassword: "" });
+  };
+
+  const handleRegister = () => {
+    setAuthError("");
+    setAuthSuccess("");
+
+    const name = authForm.name.trim();
+    const email = authForm.email.trim().toLowerCase();
+    const password = authForm.password.trim();
+    const confirmPassword = authForm.confirmPassword.trim();
+
+    if (!name || !email || !password || !confirmPassword) {
+      setAuthError("Compila tutti i campi.");
+      return;
+    }
+
+    if (!email.includes("@") || !email.includes(".")) {
+      setAuthError("Inserisci una email valida.");
+      return;
+    }
+
+    if (password.length < 6) {
+      setAuthError("La password deve avere almeno 6 caratteri.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setAuthError("Le password non coincidono.");
+      return;
+    }
+
+    if (authUsers.some((u) => u.email === email)) {
+      setAuthError("Esiste già un account con questa email.");
+      return;
+    }
+
+    const newUser = {
+      id: Date.now(),
+      name,
+      email,
+      password,
+      createdAt: new Date().toISOString(),
+    };
+
+    setAuthUsers((prev) => [...prev, newUser]);
+
+    const session = {
+      isAuthenticated: true,
+      email,
+      name,
+      mode: "account",
+      isDemo: false,
+    };
+
+    setAuthSession(session);
+    syncUserIntoProfile(newUser);
+    setAuthSuccess("Account creato con successo.");
+    setAuthForm({ name: "", email: "", password: "", confirmPassword: "" });
+  };
+
+  const handleForgotPassword = () => {
+    setAuthError("");
+    setAuthSuccess("");
+
+    const email = authForm.email.trim().toLowerCase();
+    if (!email) {
+      setAuthError("Inserisci la tua email.");
+      return;
+    }
+
+    const user = authUsers.find((u) => u.email === email);
+    if (!user) {
+      setAuthError("Nessun account trovato con questa email.");
+      return;
+    }
+
+    setAuthSuccess(`Richiesta registrata per ${email}. Per ora è una simulazione locale.`);
+  };
+
+  const enterDemo = () => {
+    setAuthError("");
+    setAuthSuccess("");
+
+    const demoSession = {
+      isAuthenticated: true,
+      email: "demo@jobly.local",
+      name: "Demo User",
+      mode: "demo",
+      isDemo: true,
+    };
+
+    setAuthSession(demoSession);
+    syncUserIntoProfile({ name: "Demo User", email: "demo@jobly.local" });
+  };
+
+  const handleLogout = () => {
+    setAuthSession(defaultAuthSession);
+    setAuthMode("login");
+    setAuthForm({
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    });
+    setAuthError("");
+    setAuthSuccess("");
+  };
+
+  if (!authSession.isAuthenticated) {
+    return (
+      <AuthScreen
+        theme={theme}
+        authMode={authMode}
+        setAuthMode={setAuthMode}
+        authForm={authForm}
+        setAuthForm={setAuthForm}
+        authError={authError}
+        authSuccess={authSuccess}
+        authShowPassword={authShowPassword}
+        setAuthShowPassword={setAuthShowPassword}
+        handleLogin={handleLogin}
+        handleRegister={handleRegister}
+        handleForgotPassword={handleForgotPassword}
+        enterDemo={enterDemo}
+      />
+    );
+  }
+
+  return (
+    <AppContent
+      tab={tab}
+      setTab={setTab}
+      theme={theme}
+      setTheme={setTheme}
+      search={search}
+      setSearch={setSearch}
+      city={city}
+      setCity={setCity}
+      contract={contract}
+      setContract={setContract}
+      maxDistance={maxDistance}
+      setMaxDistance={setMaxDistance}
+      savedIds={savedIds}
+      applications={applications}
+      profile={profile}
+      setProfile={setProfile}
+      jobPosts={jobPosts}
+      chat={chat}
+      cvData={cvData}
+      setCvData={setCvData}
+      savedCVs={savedCVs}
+      cvSection={cvSection}
+      setCvSection={setCvSection}
+      lastSavedAt={lastSavedAt}
+      saveFeedback={saveFeedback}
+      authSession={authSession}
+      newPost={newPost}
+      setNewPost={setNewPost}
+      chatInput={chatInput}
+      setChatInput={setChatInput}
+      filteredOffers={filteredOffers}
+      profileCompletion={profileCompletion}
+      cvCompletion={cvCompletion}
+      missingCVItems={missingCVItems}
+      applyToOffer={applyToOffer}
+      toggleSave={toggleSave}
+      sendChat={sendChat}
+      addPost={addPost}
+      handleGoToCVFromOffer={handleGoToCVFromOffer}
+      generateProfileAI={generateProfileAI}
+      improveExperienceAI={improveExperienceAI}
+      suggestSkillsAI={suggestSkillsAI}
+      adaptCVAI={adaptCVAI}
+      generateCoverLetterAI={generateCoverLetterAI}
+      saveCurrentCV={saveCurrentCV}
+      openCVSection={openCVSection}
+      addExperience={addExperience}
+      updateExperience={updateExperience}
+      removeExperience={removeExperience}
+      addEducation={addEducation}
+      updateEducation={updateEducation}
+      removeEducation={removeEducation}
+      addSkill={addSkill}
+      removeSkill={removeSkill}
+      clearImportedCv={clearImportedCv}
+      applyImportedCvToStudio={applyImportedCvToStudio}
+      handleImportCvFile={handleImportCvFile}
+      clearLocalData={clearLocalData}
+      handleLogout={handleLogout}
+      persistAllData={persistAllData}
+      fileInputRef={fileInputRef}
+    />
   );
 }
