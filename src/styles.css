@@ -1,43 +1,42 @@
-Css
-
+/* RESET BASE */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: Inter, system-ui, sans-serif;
 }
 
-body {
-  background: #0a0d12;
-  color: #f5f7fb;
+/* THEME */
+.theme-dark {
+  background: #0d0f14;
+  color: #ffffff;
 }
-
-/* THEMES */
 
 .theme-light {
-  background: #f4f7fb;
-  color: #111827;
+  background: #f5f5f5;
+  color: #111;
 }
 
-/* LAYOUT */
-
-.app-shell {
-  min-height: 100vh;
+/* BODY */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
-/* TOPBAR */
-
+/* HEADER */
 .topbar {
   display: flex;
   justify-content: space-between;
-  padding: 16px 24px;
   align-items: center;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  padding: 16px 24px;
+  border-bottom: 1px solid #222;
 }
 
 .brand {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 800;
+}
+
+.brand-white {
+  color: white;
 }
 
 .brand-red {
@@ -46,18 +45,48 @@ body {
 
 .top-icons {
   display: flex;
+  gap: 12px;
   align-items: center;
-  gap: 16px;
 }
 
-/* BUTTONS */
+/* HERO */
+.hero {
+  padding: 24px;
+}
 
+.hero-left h1 {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.hero-left p {
+  color: #aaa;
+}
+
+/* CARD BASE */
+.card {
+  background: #151922;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #2a2f3a;
+}
+
+/* INPUT */
+.input, .select, .textarea {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #333;
+  background: #0f131b;
+  color: white;
+}
+
+/* BUTTON */
 .btn {
   padding: 10px 14px;
-  border-radius: 12px;
+  border-radius: 8px;
   border: none;
   cursor: pointer;
-  font-weight: 600;
 }
 
 .btn-red {
@@ -66,84 +95,125 @@ body {
 }
 
 .btn-dark {
-  background: rgba(255,255,255,0.06);
-  color: inherit;
+  background: #1f2937;
+  color: white;
 }
 
-/* INPUT */
-
-.input, .textarea, .select {
-  width: 100%;
-  padding: 10px;
-  border-radius: 10px;
-  border: none;
-  background: rgba(255,255,255,0.05);
-  color: inherit;
+/* BADGE */
+.badge {
+  background: #1f2937;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
 }
 
-/* CARD */
+.badge-red {
+  background: #ef4444;
+}
 
-.card {
-  background: rgba(255,255,255,0.04);
-  padding: 16px;
-  border-radius: 16px;
-  margin-bottom: 16px;
+.badge-dark {
+  background: #111;
 }
 
 /* OFFER */
-
 .offer-title {
-  font-weight: 700;
-  font-size: 16px;
+  font-weight: bold;
 }
 
 .meta {
-  font-size: 13px;
-  opacity: 0.7;
+  font-size: 12px;
+  color: #aaa;
+}
+
+.meta-text {
+  color: #aaa;
+}
+
+.small {
+  font-size: 12px;
 }
 
 /* GRID */
-
 .offer-grid {
   display: grid;
   gap: 16px;
 }
 
-@media (min-width: 768px) {
-  .offer-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+/* STACK */
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ACTIONS */
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* TABS */
+.tabs {
+  display: flex;
+  gap: 8px;
+  padding: 16px;
+  overflow-x: auto;
+}
+
+.tab {
+  padding: 8px 12px;
+  background: #1f2937;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.tab-active {
+  background: #ef4444;
 }
 
 /* CHAT */
-
 .chat-box {
-  height: 300px;
+  max-height: 200px;
   overflow-y: auto;
-  padding: 10px;
 }
 
 .msg {
-  padding: 10px;
-  border-radius: 10px;
-  margin-bottom: 8px;
+  padding: 8px;
+  margin-bottom: 6px;
+  border-radius: 6px;
 }
 
 .msg-user {
   background: #ef4444;
   color: white;
-  text-align: right;
 }
 
 .msg-ai {
-  background: rgba(255,255,255,0.05);
+  background: #1f2937;
+}
+
+/* FOOTER */
+.footer {
+  text-align: center;
+  padding: 16px;
+  font-size: 12px;
+  color: #666;
 }
 
 /* MOBILE FIX */
+@media (min-width: 768px) {
+  .two-col {
+    grid-template-columns: 1fr 1fr;
+  }
 
-@media (max-width: 768px) {
-  .topbar {
-    flex-direction: column;
-    gap: 10px;
+  .offer-grid {
+    grid-template-columns: 1fr 1fr;
   }
 }
