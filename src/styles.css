@@ -147,8 +147,8 @@ body,
 
 .hero-left {
   position: relative;
-  padding: 30px 28px;
-  border-radius: 28px;
+  padding: 32px 30px;
+  border-radius: 30px;
   overflow: hidden;
 }
 
@@ -216,14 +216,10 @@ body,
 }
 
 .tabs {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.tabs::-webkit-scrollbar {
-  display: none;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px;
+  width: 100%;
 }
 
 .tabs-premium {
@@ -233,6 +229,7 @@ body,
 .cv-tabs {
   margin-top: 18px;
   margin-bottom: 18px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 .tab {
@@ -240,8 +237,9 @@ body,
   align-items: center;
   justify-content: center;
   gap: 10px;
-  min-width: 154px;
-  padding: 14px 22px;
+  width: 100%;
+  min-width: 0;
+  padding: 15px 18px;
   border-radius: 18px;
   border: none;
   cursor: pointer;
@@ -996,6 +994,16 @@ body,
   }
 }
 
+@media (max-width: 1200px) {
+  .tabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .cv-tabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 979px) {
   .topbar {
     padding: 14px 16px;
@@ -1027,8 +1035,7 @@ body,
   }
 
   .tab {
-    min-width: 138px;
-    padding: 13px 18px;
+    padding: 13px 16px;
   }
 
   .card-head {
@@ -1068,5 +1075,15 @@ body,
 
   .auth-left h1 {
     font-size: 2.4rem;
+  }
+}
+
+@media (max-width: 720px) {
+  .tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cv-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
