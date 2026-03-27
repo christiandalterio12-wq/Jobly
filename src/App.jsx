@@ -23,6 +23,12 @@ import {
   Target,
   Plus,
   Trash2,
+  Save,
+  LogOut,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 const STORAGE_KEYS = {
@@ -34,6 +40,11 @@ const STORAGE_KEYS = {
   chat: "jobly_chat",
   cvData: "jobly_cv_data",
   savedCVs: "jobly_saved_cvs",
+  activeTab: "jobly_active_tab",
+  activeCvSection: "jobly_active_cv_section",
+  lastSavedAt: "jobly_last_saved_at",
+  authSession: "jobly_auth_session",
+  authUsers: "jobly_auth_users",
 };
 
 const offersSeed = [
@@ -115,6 +126,14 @@ const defaultSavedCVs = [
   { id: 1, name: "CV_Christian.pdf", role: "Back Office / Order Management", updated: "Oggi", status: "Completo" },
   { id: 2, name: "CV_Logistica.pdf", role: "Logistica / Magazzino", updated: "Ieri", status: "Bozza" },
 ];
+
+const defaultAuthSession = {
+  isAuthenticated: false,
+  email: "",
+  name: "",
+};
+
+const defaultAuthUsers = [];
 
 const aiReply = (message) => {
   const lower = message.toLowerCase();
@@ -242,8 +261,395 @@ function SectionPreview({ title, content, emptyText }) {
   );
 }
 
+function AuthScreen({
+  theme,
+  authMode,
+  setAuthMode,
+  authForm,
+  setAuthForm,
+  authError,
+  authSuccess,
+  authShowPassword,
+  setAuthShowPassword,
+  handleLogin,
+  handleRegister,
+  handleForgotPassword,
+  enterDemo,
+}) {
+  const premiumBg = theme === "dark"
+    ? {
+        background:
+          "radial-gradient(circle at 20% 20%, rgba(239,68,68,0.22), transparent 24%), radial-gradient(circle at 80% 30%, rgba(255,255,255,0.08), transparent 18%), radial-gradient(circle at 50% 80%, rgba(239,68,68,0.14), transparent 24%), linear-gradient(135deg, #090b10 0%, #11141b 45%, #0b0d12 100%)",
+        color: "#f5f7fb",
+      }
+    : {
+        background:
+          "radial-gradient(circle at 20% 20%, rgba(239,68,68,0.18), transparent 24%), radial-gradient(circle at 80% 30%, rgba(17,24,39,0.06), transparent 18%), radial-gradient(circle at 50% 80%, rgba(239,68,68,0.12), transparent 24%), linear-gradient(135deg, #ffffff 0%, #f4f7fb 48%, #eef2f7 100%)",
+        color: "#111827",
+      };
+
+  const cardBg = theme === "dark" ? "rgba(17,20,27,0.88)" : "rgba(255,255,255,0.9)";
+  const secondary = theme === "dark" ? "#aeb6c7" : "#5b6472";
+  const border = theme === "dark" ? "rgba(255,255,255,0.08)" : "rgba(17,24,39,0.08)";
+  const inputBg = theme === "dark" ? "#0f131b" : "#f3f4f6";
+  const inputColor = theme === "dark" ? "#f5f7fb" : "#111827";
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        ...premiumBg,
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      <motion.div
+        animate={{ scale: [1, 1.08, 1], rotate: [0, 12, 0] }}
+        transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+        style={{
+          position: "absolute",
+          width: 420,
+          height: 420,
+          borderRadius: "50%",
+          background: "rgba(239,68,68,0.16)",
+          filter: "blur(40px)",
+          top: -80,
+          left: -80,
+        }}
+      />
+      <motion.div
+        animate={{ scale: [1.1, 1, 1.1], y: [0, -20, 0] }}
+        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+        style={{
+          position: "absolute",
+          width: 360,
+          height: 360,
+          borderRadius: "50%",
+          background: "rgba(255,255,255,0.08)",
+          filter: "blur(44px)",
+          bottom: -80,
+          right: -50,
+        }}
+      />
+
+      <div
+        style={{
+          position: "relative",
+          zIndex: 2,
+          width: "min(1200px, calc(100% - 32px))",
+          margin: "0 auto",
+          minHeight: "100vh",
+          display: "grid",
+          gridTemplateColumns: "1.1fr 0.9fr",
+          gap: 28,
+          alignItems: "center",
+          padding: "28px 0",
+        }}
+      >
+        <div style={{ paddingRight: 12 }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
+            <div style={{ fontSize: "2rem", fontWeight: 800, letterSpacing: "0.08em" }}>
+              <span style={{ color: premiumBg.color }}>JOB</span>
+              <span style={{ color: "#ef4444" }}>LY</span>
+            </div>
+            <span
+              style={{
+                padding: "8px 12px",
+                borderRadius: 999,
+                background: theme === "dark" ? "rgba(255,255,255,0.08)" : "rgba(17,24,39,0.06)",
+                border: `1px solid ${border}`,
+                fontSize: 13,
+                fontWeight: 700,
+              }}
+            >
+              Premium Access
+            </span>
+          </div>
+
+          <motion.h1
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            style={{
+              fontSize: "clamp(2.3rem, 5vw, 4.4rem)",
+              lineHeight: 0.98,
+              letterSpacing: "-0.05em",
+              margin: "0 0 16px",
+              maxWidth: 620,
+            }}
+          >
+            La tua piattaforma lavoro,
+            <br />
+            con accesso premium e identità forte.
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            style={{
+              maxWidth: 620,
+              color: secondary,
+              fontSize: 17,
+              margin: "0 0 24px",
+            }}
+          >
+            Entra in Jobly per gestire candidature, CV Studio, profilo professionale e strumenti AI in un’unica esperienza semplice, moderna e curata.
+          </motion.p>
+
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+            {["Accesso sicuro", "CV Studio", "AI integrata", "Esperienza premium"].map((item) => (
+              <div
+                key={item}
+                style={{
+                  padding: "10px 14px",
+                  borderRadius: 999,
+                  border: `1px solid ${border}`,
+                  background: theme === "dark" ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.62)",
+                  fontWeight: 700,
+                  fontSize: 14,
+                }}
+              >
+                {item}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 18, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.45 }}
+          style={{
+            background: cardBg,
+            border: `1px solid ${border}`,
+            boxShadow: theme === "dark"
+              ? "0 20px 60px rgba(0,0,0,0.35)"
+              : "0 20px 60px rgba(15,23,42,0.12)",
+            borderRadius: 28,
+            padding: 26,
+            backdropFilter: "blur(18px)",
+          }}
+        >
+          <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
+            {[
+              { key: "login", label: "Accedi" },
+              { key: "register", label: "Registrati" },
+              { key: "forgot", label: "Password dimenticata" },
+            ].map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => setAuthMode(item.key)}
+                style={{
+                  border: "none",
+                  padding: "11px 14px",
+                  borderRadius: 999,
+                  cursor: "pointer",
+                  fontWeight: 700,
+                  background:
+                    authMode === item.key
+                      ? "#ef4444"
+                      : theme === "dark"
+                      ? "rgba(255,255,255,0.06)"
+                      : "rgba(17,24,39,0.06)",
+                  color: authMode === item.key ? "#fff" : inputColor,
+                }}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 6 }}>
+              {authMode === "login" && "Bentornato"}
+              {authMode === "register" && "Crea il tuo account"}
+              {authMode === "forgot" && "Recupera l’accesso"}
+            </div>
+            <div style={{ color: secondary, fontSize: 14 }}>
+              {authMode === "login" && "Accedi per continuare in Jobly."}
+              {authMode === "register" && "Registrati per salvare CV, profilo e candidature."}
+              {authMode === "forgot" && "Inserisci la tua email per simulare il recupero password."}
+            </div>
+          </div>
+
+          {authError && (
+            <div
+              style={{
+                marginBottom: 14,
+                padding: "12px 14px",
+                borderRadius: 14,
+                background: "rgba(239,68,68,0.12)",
+                border: "1px solid rgba(239,68,68,0.25)",
+                color: theme === "dark" ? "#fecaca" : "#b91c1c",
+                fontSize: 14,
+                fontWeight: 600,
+              }}
+            >
+              {authError}
+            </div>
+          )}
+
+          {authSuccess && (
+            <div
+              style={{
+                marginBottom: 14,
+                padding: "12px 14px",
+                borderRadius: 14,
+                background: "rgba(34,197,94,0.12)",
+                border: "1px solid rgba(34,197,94,0.22)",
+                color: theme === "dark" ? "#bbf7d0" : "#166534",
+                fontSize: 14,
+                fontWeight: 600,
+              }}
+            >
+              {authSuccess}
+            </div>
+          )}
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {authMode === "register" && (
+              <div>
+                <label style={{ display: "block", marginBottom: 8, fontWeight: 700, fontSize: 14 }}>Nome</label>
+                <div style={{ position: "relative" }}>
+                  <User size={16} style={{ position: "absolute", top: 15, left: 14, color: secondary }} />
+                  <input
+                    value={authForm.name}
+                    onChange={(e) => setAuthForm((prev) => ({ ...prev, name: e.target.value }))}
+                    placeholder="Il tuo nome"
+                    style={{
+                      width: "100%",
+                      padding: "13px 14px 13px 42px",
+                      borderRadius: 16,
+                      border: `1px solid ${border}`,
+                      background: inputBg,
+                      color: inputColor,
+                      outline: "none",
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            <div>
+              <label style={{ display: "block", marginBottom: 8, fontWeight: 700, fontSize: 14 }}>Email</label>
+              <div style={{ position: "relative" }}>
+                <Mail size={16} style={{ position: "absolute", top: 15, left: 14, color: secondary }} />
+                <input
+                  value={authForm.email}
+                  onChange={(e) => setAuthForm((prev) => ({ ...prev, email: e.target.value }))}
+                  placeholder="nome@email.com"
+                  style={{
+                    width: "100%",
+                    padding: "13px 14px 13px 42px",
+                    borderRadius: 16,
+                    border: `1px solid ${border}`,
+                    background: inputBg,
+                    color: inputColor,
+                    outline: "none",
+                  }}
+                />
+              </div>
+            </div>
+
+            {authMode !== "forgot" && (
+              <div>
+                <label style={{ display: "block", marginBottom: 8, fontWeight: 700, fontSize: 14 }}>Password</label>
+                <div style={{ position: "relative" }}>
+                  <Lock size={16} style={{ position: "absolute", top: 15, left: 14, color: secondary }} />
+                  <input
+                    type={authShowPassword ? "text" : "password"}
+                    value={authForm.password}
+                    onChange={(e) => setAuthForm((prev) => ({ ...prev, password: e.target.value }))}
+                    placeholder="Inserisci password"
+                    style={{
+                      width: "100%",
+                      padding: "13px 44px 13px 42px",
+                      borderRadius: 16,
+                      border: `1px solid ${border}`,
+                      background: inputBg,
+                      color: inputColor,
+                      outline: "none",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setAuthShowPassword((prev) => !prev)}
+                    style={{
+                      position: "absolute",
+                      right: 12,
+                      top: 11,
+                      background: "transparent",
+                      border: "none",
+                      cursor: "pointer",
+                      color: secondary,
+                    }}
+                  >
+                    {authShowPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {authMode === "register" && (
+              <div>
+                <label style={{ display: "block", marginBottom: 8, fontWeight: 700, fontSize: 14 }}>Conferma password</label>
+                <div style={{ position: "relative" }}>
+                  <Lock size={16} style={{ position: "absolute", top: 15, left: 14, color: secondary }} />
+                  <input
+                    type={authShowPassword ? "text" : "password"}
+                    value={authForm.confirmPassword}
+                    onChange={(e) => setAuthForm((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+                    placeholder="Conferma password"
+                    style={{
+                      width: "100%",
+                      padding: "13px 14px 13px 42px",
+                      borderRadius: 16,
+                      border: `1px solid ${border}`,
+                      background: inputBg,
+                      color: inputColor,
+                      outline: "none",
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 22 }}>
+            {authMode === "login" && (
+              <Button className="btn-red" onClick={handleLogin}>
+                Accedi
+              </Button>
+            )}
+            {authMode === "register" && (
+              <Button className="btn-red" onClick={handleRegister}>
+                Crea account
+              </Button>
+            )}
+            {authMode === "forgot" && (
+              <Button className="btn-red" onClick={handleForgotPassword}>
+                Invia richiesta
+              </Button>
+            )}
+
+            <Button className="btn-dark" onClick={enterDemo}>
+              Continua in demo
+            </Button>
+          </div>
+
+          <div style={{ marginTop: 18, color: secondary, fontSize: 13 }}>
+            Accesso premium, semplice e immediato. Il suono lo valutiamo dopo.
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
 export default function JoblyApp() {
-  const [tab, setTab] = useState("offerte");
+  const [tab, setTab] = useState(() => readStorage(STORAGE_KEYS.activeTab, "offerte"));
   const [theme, setTheme] = useState(() => readStorage(STORAGE_KEYS.theme, "dark"));
 
   const [search, setSearch] = useState("");
@@ -258,6 +664,22 @@ export default function JoblyApp() {
   const [chat, setChat] = useState(() => readStorage(STORAGE_KEYS.chat, defaultChat));
   const [cvData, setCvData] = useState(() => readStorage(STORAGE_KEYS.cvData, defaultCvData));
   const [savedCVs, setSavedCVs] = useState(() => readStorage(STORAGE_KEYS.savedCVs, defaultSavedCVs));
+  const [cvSection, setCvSection] = useState(() => readStorage(STORAGE_KEYS.activeCvSection, "dashboard"));
+  const [lastSavedAt, setLastSavedAt] = useState(() => readStorage(STORAGE_KEYS.lastSavedAt, null));
+  const [saveFeedback, setSaveFeedback] = useState("");
+
+  const [authSession, setAuthSession] = useState(() => readStorage(STORAGE_KEYS.authSession, defaultAuthSession));
+  const [authUsers, setAuthUsers] = useState(() => readStorage(STORAGE_KEYS.authUsers, defaultAuthUsers));
+  const [authMode, setAuthMode] = useState("login");
+  const [authShowPassword, setAuthShowPassword] = useState(false);
+  const [authError, setAuthError] = useState("");
+  const [authSuccess, setAuthSuccess] = useState("");
+  const [authForm, setAuthForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
 
   const [newPost, setNewPost] = useState({
     title: "",
@@ -267,7 +689,30 @@ export default function JoblyApp() {
   });
 
   const [chatInput, setChatInput] = useState("");
-  const [cvSection, setCvSection] = useState("dashboard");
+
+  const persistAllData = (message = "Dati salvati") => {
+    const now = new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+
+    localStorage.setItem(STORAGE_KEYS.theme, JSON.stringify(theme));
+    localStorage.setItem(STORAGE_KEYS.savedIds, JSON.stringify(savedIds));
+    localStorage.setItem(STORAGE_KEYS.applications, JSON.stringify(applications));
+    localStorage.setItem(STORAGE_KEYS.profile, JSON.stringify(profile));
+    localStorage.setItem(STORAGE_KEYS.jobPosts, JSON.stringify(jobPosts));
+    localStorage.setItem(STORAGE_KEYS.chat, JSON.stringify(chat));
+    localStorage.setItem(STORAGE_KEYS.cvData, JSON.stringify(cvData));
+    localStorage.setItem(STORAGE_KEYS.savedCVs, JSON.stringify(savedCVs));
+    localStorage.setItem(STORAGE_KEYS.activeTab, JSON.stringify(tab));
+    localStorage.setItem(STORAGE_KEYS.activeCvSection, JSON.stringify(cvSection));
+    localStorage.setItem(STORAGE_KEYS.lastSavedAt, JSON.stringify(now));
+
+    setLastSavedAt(now);
+    setSaveFeedback(`${message} alle ${now}`);
+
+    window.clearTimeout(window.__joblySaveTimer);
+    window.__joblySaveTimer = window.setTimeout(() => {
+      setSaveFeedback("");
+    }, 2200);
+  };
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.theme, JSON.stringify(theme));
@@ -300,6 +745,22 @@ export default function JoblyApp() {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.savedCVs, JSON.stringify(savedCVs));
   }, [savedCVs]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.activeTab, JSON.stringify(tab));
+  }, [tab]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.activeCvSection, JSON.stringify(cvSection));
+  }, [cvSection]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.authSession, JSON.stringify(authSession));
+  }, [authSession]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.authUsers, JSON.stringify(authUsers));
+  }, [authUsers]);
 
   const filteredOffers = useMemo(() => {
     return offersSeed.filter((o) => {
@@ -370,6 +831,7 @@ export default function JoblyApp() {
     if (!newPost.title || !newPost.company || !newPost.city) return;
     setJobPosts((prev) => [newPost, ...prev]);
     setNewPost({ title: "", company: "", city: "", contract: "Tempo indeterminato" });
+    persistAllData("Offerta salvata");
   };
 
   const handleGoToCVFromOffer = (offer) => {
@@ -455,6 +917,7 @@ export default function JoblyApp() {
     };
     setSavedCVs((prev) => [newCV, ...prev]);
     setProfile((prev) => ({ ...prev, cvName: newCV.name }));
+    persistAllData("CV salvato");
   };
 
   const openCVSection = (section) => {
@@ -548,6 +1011,145 @@ export default function JoblyApp() {
     window.location.reload();
   };
 
+  const handleLogin = () => {
+    setAuthError("");
+    setAuthSuccess("");
+
+    const email = authForm.email.trim().toLowerCase();
+    const password = authForm.password.trim();
+
+    if (!email || !password) {
+      setAuthError("Inserisci email e password.");
+      return;
+    }
+
+    const user = authUsers.find((u) => u.email === email && u.password === password);
+    if (!user) {
+      setAuthError("Credenziali non valide.");
+      return;
+    }
+
+    setAuthSession({
+      isAuthenticated: true,
+      email: user.email,
+      name: user.name || "Utente Jobly",
+    });
+
+    setProfile((prev) => ({
+      ...prev,
+      name: user.name || prev.name,
+    }));
+
+    setAuthSuccess("Accesso effettuato.");
+  };
+
+  const handleRegister = () => {
+    setAuthError("");
+    setAuthSuccess("");
+
+    const name = authForm.name.trim();
+    const email = authForm.email.trim().toLowerCase();
+    const password = authForm.password.trim();
+    const confirmPassword = authForm.confirmPassword.trim();
+
+    if (!name || !email || !password || !confirmPassword) {
+      setAuthError("Compila tutti i campi.");
+      return;
+    }
+
+    if (password.length < 6) {
+      setAuthError("La password deve avere almeno 6 caratteri.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setAuthError("Le password non coincidono.");
+      return;
+    }
+
+    if (authUsers.some((u) => u.email === email)) {
+      setAuthError("Esiste già un account con questa email.");
+      return;
+    }
+
+    const newUser = { name, email, password };
+    setAuthUsers((prev) => [...prev, newUser]);
+    setAuthSession({
+      isAuthenticated: true,
+      email,
+      name,
+    });
+
+    setProfile((prev) => ({
+      ...prev,
+      name,
+    }));
+
+    setAuthSuccess("Account creato con successo.");
+  };
+
+  const handleForgotPassword = () => {
+    setAuthError("");
+    setAuthSuccess("");
+
+    const email = authForm.email.trim().toLowerCase();
+    if (!email) {
+      setAuthError("Inserisci la tua email.");
+      return;
+    }
+
+    const exists = authUsers.some((u) => u.email === email);
+    if (!exists) {
+      setAuthError("Nessun account trovato con questa email.");
+      return;
+    }
+
+    setAuthSuccess("Richiesta inviata. Per ora è una simulazione locale.");
+  };
+
+  const enterDemo = () => {
+    setAuthError("");
+    setAuthSuccess("");
+    setAuthSession({
+      isAuthenticated: true,
+      email: "demo@jobly.local",
+      name: "Demo User",
+    });
+  };
+
+  const handleLogout = () => {
+    setAuthSession(defaultAuthSession);
+    setAuthMode("login");
+    setAuthForm({
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    });
+    setAuthError("");
+    setAuthSuccess("");
+  };
+
+  if (!authSession.isAuthenticated) {
+    return (
+      <AuthScreen
+        theme={theme}
+        authMode={authMode}
+        setAuthMode={setAuthMode}
+        authForm={authForm}
+        setAuthForm={setAuthForm}
+        authError={authError}
+        authSuccess={authSuccess}
+        authShowPassword={authShowPassword}
+        setAuthShowPassword={setAuthShowPassword}
+        handleLogin={handleLogin}
+        handleRegister={handleRegister}
+        handleForgotPassword={handleForgotPassword}
+        enterDemo={enterDemo}
+      />
+    );
+  }
+
   return (
     <div className={`app-shell ${theme === "dark" ? "theme-dark" : "theme-light"}`}>
       <header className="topbar">
@@ -570,7 +1172,21 @@ export default function JoblyApp() {
             {theme === "dark" ? "☀️" : "🌙"}
           </button>
           <Bell size={20} />
-          <User size={20} />
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <User size={20} />
+            <span style={{ fontSize: 13, fontWeight: 700, maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {authSession.name}
+            </span>
+          </div>
+          <button
+            type="button"
+            className="theme-toggle"
+            onClick={handleLogout}
+            aria-label="Esci"
+            title="Esci"
+          >
+            <LogOut size={16} />
+          </button>
         </div>
       </header>
 
@@ -761,7 +1377,9 @@ export default function JoblyApp() {
                 <Textarea value={profile.bio} onChange={(e) => setProfile({ ...profile, bio: e.target.value })} placeholder="Bio" />
                 <Textarea value={profile.skills} onChange={(e) => setProfile({ ...profile, skills: e.target.value })} placeholder="Competenze" />
                 <Input value={profile.cvName} onChange={(e) => setProfile({ ...profile, cvName: e.target.value })} placeholder="Nome CV" />
-                <Button className="btn-red">Salva profilo</Button>
+                <Button className="btn-red" onClick={() => persistAllData("Profilo salvato")}>
+                  <Save size={16} /> Salva profilo
+                </Button>
                 <Button className="btn-dark" onClick={() => openCVSection("dashboard")}>
                   <FileText size={16} /> Vai a CV Studio
                 </Button>
@@ -814,6 +1432,17 @@ export default function JoblyApp() {
                 <div className="muted">Completamento CV {cvCompletion}%</div>
               </div>
 
+              <div className="inner-box" style={{ marginBottom: 20 }}>
+                <div className="actions" style={{ justifyContent: "space-between", marginTop: 0 }}>
+                  <div className="meta-text small">
+                    {saveFeedback || (lastSavedAt ? `Ultimo salvataggio: ${lastSavedAt}` : "Salvataggio locale disponibile")}
+                  </div>
+                  <Button className="btn-dark" onClick={() => persistAllData("CV salvato manualmente")}>
+                    <Save size={16} /> Salva ora
+                  </Button>
+                </div>
+              </div>
+
               <div className="tabs" style={{ marginBottom: 20 }}>
                 {[
                   { key: "dashboard", label: "Dashboard" },
@@ -836,7 +1465,13 @@ export default function JoblyApp() {
             {cvSection === "dashboard" && (
               <div className="two-col">
                 <Card>
-                  <h3>Azioni principali</h3>
+                  <div className="actions" style={{ justifyContent: "space-between", marginTop: 0, marginBottom: 16 }}>
+                    <h3 style={{ margin: 0 }}>Azioni principali</h3>
+                    <Button className="btn-dark" onClick={() => persistAllData("Dashboard salvata")}>
+                      <Save size={16} /> Salva
+                    </Button>
+                  </div>
+
                   <div className="stack">
                     <CVActionCard
                       icon={<FileText size={18} color="#ef4444" />}
@@ -975,7 +1610,13 @@ export default function JoblyApp() {
             {cvSection === "create" && (
               <div className="two-col">
                 <Card>
-                  <h3>Crea il tuo CV</h3>
+                  <div className="actions" style={{ justifyContent: "space-between", marginTop: 0, marginBottom: 16 }}>
+                    <h3 style={{ margin: 0 }}>Crea il tuo CV</h3>
+                    <Button className="btn-dark" onClick={() => persistAllData("Sezione Crea CV salvata")}>
+                      <Save size={16} /> Salva
+                    </Button>
+                  </div>
+
                   <div className="stack">
                     <div className="inner-box">
                       <div className="title-row">
@@ -1117,7 +1758,7 @@ export default function JoblyApp() {
 
                     <div className="actions">
                       <Button className="btn-red" onClick={saveCurrentCV}>
-                        Salva CV
+                        <Save size={16} /> Salva CV
                       </Button>
                       <Button className="btn-dark">
                         <Download size={16} /> Export PDF
@@ -1197,7 +1838,13 @@ export default function JoblyApp() {
             {cvSection === "improve" && (
               <div className="two-col">
                 <Card>
-                  <h3>Migliora CV esistente</h3>
+                  <div className="actions" style={{ justifyContent: "space-between", marginTop: 0, marginBottom: 16 }}>
+                    <h3 style={{ margin: 0 }}>Migliora CV esistente</h3>
+                    <Button className="btn-dark" onClick={() => persistAllData("Sezione Migliora CV salvata")}>
+                      <Save size={16} /> Salva
+                    </Button>
+                  </div>
+
                   <div className="stack">
                     <div className="inner-box">
                       <div className="title-row">
@@ -1259,7 +1906,13 @@ export default function JoblyApp() {
             {cvSection === "match" && (
               <div className="two-col">
                 <Card>
-                  <h3>Adatta CV a un’offerta</h3>
+                  <div className="actions" style={{ justifyContent: "space-between", marginTop: 0, marginBottom: 16 }}>
+                    <h3 style={{ margin: 0 }}>Adatta CV a un’offerta</h3>
+                    <Button className="btn-dark" onClick={() => persistAllData("Sezione Adatta a offerta salvata")}>
+                      <Save size={16} /> Salva
+                    </Button>
+                  </div>
+
                   <div className="stack">
                     <Textarea
                       value={cvData.jobDescription}
@@ -1328,8 +1981,8 @@ export default function JoblyApp() {
                     />
                     <div className="actions">
                       <Button className="btn-red" onClick={generateCoverLetterAI}>Genera con AI</Button>
-                      <Button className="btn-dark">
-                        <Download size={16} /> Scarica
+                      <Button className="btn-dark" onClick={() => persistAllData("Lettera salvata")}>
+                        <Save size={16} /> Salva
                       </Button>
                     </div>
                   </div>
