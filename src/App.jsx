@@ -23,11 +23,18 @@ import {
   Moon,
   CheckCircle2,
   MessageSquare,
+  GraduationCap,
+  Plus,
+  Download,
+  PenSquare,
+  Target,
+  Upload,
 } from "lucide-react";
 
 const STORAGE_KEYS = {
   theme: "jobly_theme",
   activeTab: "jobly_active_tab",
+  activeCvSection: "jobly_active_cv_section",
   profile: "jobly_profile",
   offers: "jobly_offers",
   savedIds: "jobly_saved_ids",
@@ -39,6 +46,7 @@ const STORAGE_KEYS = {
   cvData: "jobly_cv_data",
   recruiterMessages: "jobly_recruiter_messages",
   activeConversationId: "jobly_active_conversation_id",
+  savedCVs: "jobly_saved_cvs",
 };
 
 const locationData = {
@@ -272,38 +280,6 @@ const defaultOffers = [
     match: 88,
     urgent: false,
   },
-  {
-    id: 7,
-    title: "Addetto Customer Support",
-    company: "Manpower",
-    region: "Lazio",
-    province: "Roma",
-    comune: "Roma",
-    zone: "EUR",
-    distance: 7,
-    contract: "Tempo determinato",
-    salary: "25K-28K",
-    remote: "Ibrido",
-    category: "Customer Service",
-    match: 73,
-    urgent: false,
-  },
-  {
-    id: 8,
-    title: "Back Office Logistico",
-    company: "Page Personnel",
-    region: "Piemonte",
-    province: "Torino",
-    comune: "Torino",
-    zone: "Lingotto",
-    distance: 5,
-    contract: "Tempo indeterminato",
-    salary: "29K-33K",
-    remote: "Ibrido",
-    category: "Logistica",
-    match: 77,
-    urgent: false,
-  },
 ];
 
 const defaultApplications = [
@@ -362,6 +338,51 @@ const defaultRecruiterMessages = [
   },
 ];
 
+const defaultSavedCVs = [
+  {
+    id: 1,
+    name: "CV_Christian.pdf",
+    role: "Back Office / Order Management",
+    updated: "Oggi",
+    status: "Completo",
+  },
+];
+
+const defaultCvData = {
+  nome: "Christian",
+  cognome: "D.",
+  email: "",
+  telefono: "",
+  citta: "Milano",
+  ruolo: "Back Office / Order Management",
+  profilo:
+    "Professionista operativo con esperienza in customer support, gestione ordini e utilizzo di strumenti gestionali. Orientato alla precisione, alla continuità operativa e alla qualità del servizio.",
+  competenze: ["SAP", "Excel", "Back Office", "Customer Care", "Ticketing"],
+  newSkill: "",
+  esperienze: [
+    {
+      id: 1,
+      ruolo: "Back Office / Supporto Clienti",
+      azienda: "Azienda attuale",
+      periodo: "2024 - Oggi",
+      descrizione:
+        "Gestione richieste clienti, aggiornamento dati, utilizzo di SAP, supporto operativo e monitoraggio pratiche.",
+    },
+  ],
+  formazione: [
+    {
+      id: 1,
+      titolo: "",
+      istituto: "",
+      periodo: "",
+      descrizione: "",
+    },
+  ],
+  jobDescription: "",
+  coverLetter:
+    "Gentile Recruiter, desidero sottoporre la mia candidatura per il ruolo indicato. Ho maturato esperienza in attività operative, customer support e gestione ordini, con attenzione alla precisione e alla continuità del servizio.",
+};
+
 const defaultAuthSession = {
   isAuthenticated: false,
   email: "",
@@ -375,11 +396,6 @@ const defaultChat = [
     text: "Ciao, sono l’assistente Jobly. Posso aiutarti a filtrare offerte, migliorare il profilo e organizzare le candidature.",
   },
 ];
-
-const defaultCvData = {
-  jobDescription: "",
-  coverLetter: "",
-};
 
 function readStorage(key, fallback) {
   try {
@@ -475,6 +491,15 @@ function OfferCard({ offer, saved, onSave, onApply, onGoCV }) {
   );
 }
 
+function SectionPreview({ title, content, emptyText }) {
+  return (
+    <div className="inner-box">
+      <div className="section-label">{title}</div>
+      <p>{content?.trim() ? content : emptyText}</p>
+    </div>
+  );
+}
+
 function AuthScreen({
   theme,
   authMode,
@@ -511,13 +536,13 @@ function AuthScreen({
             </h1>
 
             <p style={{ position: "relative", zIndex: 1 }}>
-              Accedi a offerte, candidature, profilo professionale e messaggi con le aziende in un’unica esperienza moderna.
+              Accedi a offerte, candidature, messaggi con le aziende, profilo professionale e CV Studio in un’unica esperienza moderna.
             </p>
 
             <div className="chips" style={{ position: "relative", zIndex: 1 }}>
               <Badge className="badge-red">Accesso sicuro</Badge>
               <Badge>Messaggi recruiter</Badge>
-              <Badge>AI integrata</Badge>
+              <Badge>CV Studio</Badge>
             </div>
           </Card>
 
@@ -541,11 +566,6 @@ function AuthScreen({
                   {authMode === "register" && "Crea il tuo account"}
                   {authMode === "forgot" && "Recupera accesso"}
                 </h2>
-                <p>
-                  {authMode === "login" && "Accedi per continuare in Jobly."}
-                  {authMode === "register" && "Registrati per salvare profilo e candidature."}
-                  {authMode === "forgot" && "Inserisci la tua email per la simulazione di recupero."}
-                </p>
               </div>
             </div>
 
@@ -644,7 +664,6 @@ function AuthScreen({
                   Invia richiesta
                 </Button>
               )}
-
               <Button className="btn-dark" onClick={enterDemo}>
                 Continua in demo
               </Button>
@@ -659,6 +678,7 @@ function AuthScreen({
 export default function App() {
   const [theme, setTheme] = useState(() => readStorage(STORAGE_KEYS.theme, "dark"));
   const [tab, setTab] = useState(() => readStorage(STORAGE_KEYS.activeTab, "offerte"));
+  const [cvSection, setCvSection] = useState(() => readStorage(STORAGE_KEYS.activeCvSection, "dashboard"));
 
   const [profile, setProfile] = useState(() => readStorage(STORAGE_KEYS.profile, defaultProfile));
   const [offers] = useState(() => readStorage(STORAGE_KEYS.offers, defaultOffers));
@@ -669,6 +689,7 @@ export default function App() {
   const [authSession, setAuthSession] = useState(() => readStorage(STORAGE_KEYS.authSession, defaultAuthSession));
   const [chat, setChat] = useState(() => readStorage(STORAGE_KEYS.chat, defaultChat));
   const [cvData, setCvData] = useState(() => readStorage(STORAGE_KEYS.cvData, defaultCvData));
+  const [savedCVs, setSavedCVs] = useState(() => readStorage(STORAGE_KEYS.savedCVs, defaultSavedCVs));
   const [recruiterMessages, setRecruiterMessages] = useState(() =>
     readStorage(STORAGE_KEYS.recruiterMessages, defaultRecruiterMessages)
   );
@@ -708,6 +729,10 @@ export default function App() {
   }, [tab]);
 
   useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.activeCvSection, JSON.stringify(cvSection));
+  }, [cvSection]);
+
+  useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.profile, JSON.stringify(profile));
   }, [profile]);
 
@@ -740,6 +765,10 @@ export default function App() {
   }, [cvData]);
 
   useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.savedCVs, JSON.stringify(savedCVs));
+  }, [savedCVs]);
+
+  useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.recruiterMessages, JSON.stringify(recruiterMessages));
   }, [recruiterMessages]);
 
@@ -763,7 +792,6 @@ export default function App() {
   }, [comune]);
 
   const regionOptions = useMemo(() => ["all", ...Object.keys(locationData)], []);
-
   const provinceOptions = useMemo(() => {
     if (region === "all" || !locationData[region]) return ["all"];
     return ["all", ...Object.keys(locationData[region])];
@@ -812,6 +840,29 @@ export default function App() {
     return score;
   }, [profile]);
 
+  const cvCompletion = useMemo(() => {
+    let score = 0;
+    if (cvData.nome) score += 10;
+    if (cvData.cognome) score += 10;
+    if (cvData.email) score += 10;
+    if (cvData.telefono) score += 10;
+    if (cvData.ruolo) score += 15;
+    if (cvData.profilo) score += 15;
+    if (cvData.esperienze.some((x) => x.ruolo || x.azienda || x.descrizione)) score += 15;
+    if (cvData.competenze.length > 0) score += 15;
+    if (cvData.formazione.some((x) => x.titolo || x.istituto)) score += 10;
+    return Math.min(score, 100);
+  }, [cvData]);
+
+  const missingCVItems = useMemo(() => {
+    const items = [];
+    if (!cvData.email) items.push("email");
+    if (!cvData.telefono) items.push("telefono");
+    if (!cvData.formazione.some((x) => x.titolo || x.istituto)) items.push("formazione");
+    if (!cvData.jobDescription) items.push("annuncio per adattamento");
+    return items;
+  }, [cvData]);
+
   const totalUnreadMessages = useMemo(
     () => recruiterMessages.filter((conv) => conv.unread).length,
     [recruiterMessages]
@@ -830,9 +881,7 @@ export default function App() {
     }, 1800);
   };
 
-  const saveProfile = () => {
-    pulseSave("Profilo salvato");
-  };
+  const saveProfile = () => pulseSave("Profilo salvato");
 
   const toggleSaveOffer = (offerId) => {
     setSavedIds((prev) => (prev.includes(offerId) ? prev.filter((id) => id !== offerId) : [...prev, offerId]));
@@ -918,7 +967,8 @@ export default function App() {
       ...prev,
       jobDescription: `${offer.title} presso ${offer.company}. Regione ${offer.region}, provincia ${offer.province}, comune ${offer.comune}${offer.zone ? `, zona ${offer.zone}` : ""}. Contratto ${offer.contract}. Modalità ${offer.remote}.`,
     }));
-    setTab("ai");
+    setTab("cv");
+    setCvSection("match");
     pulseSave("Descrizione offerta preparata per il CV");
   };
 
@@ -1026,41 +1076,26 @@ export default function App() {
       setAuthError("Compila tutti i campi.");
       return;
     }
-
     if (!email.includes("@") || !email.includes(".")) {
       setAuthError("Inserisci una email valida.");
       return;
     }
-
     if (password.length < 6) {
       setAuthError("La password deve avere almeno 6 caratteri.");
       return;
     }
-
     if (password !== confirmPassword) {
       setAuthError("Le password non coincidono.");
       return;
     }
-
     if (authUsers.some((u) => u.email === email)) {
       setAuthError("Esiste già un account con questa email.");
       return;
     }
 
-    const newUser = {
-      id: Date.now(),
-      name,
-      email,
-      password,
-    };
-
+    const newUser = { id: Date.now(), name, email, password };
     setAuthUsers((prev) => [...prev, newUser]);
-    setAuthSession({
-      isAuthenticated: true,
-      email,
-      name,
-      isDemo: false,
-    });
+    setAuthSession({ isAuthenticated: true, email, name, isDemo: false });
     syncUserIntoProfile(newUser);
     setAuthForm({ name: "", email: "", password: "", confirmPassword: "" });
     setAuthSuccess("Account creato con successo.");
@@ -1100,6 +1135,176 @@ export default function App() {
     setAuthMode("login");
     setAuthError("");
     setAuthSuccess("");
+  };
+
+  const openCVSection = (section) => {
+    setTab("cv");
+    setCvSection(section);
+  };
+
+  const addExperience = () => {
+    setCvData((prev) => ({
+      ...prev,
+      esperienze: [
+        ...prev.esperienze,
+        {
+          id: Date.now(),
+          ruolo: "",
+          azienda: "",
+          periodo: "",
+          descrizione: "",
+        },
+      ],
+    }));
+  };
+
+  const updateExperience = (id, field, value) => {
+    setCvData((prev) => ({
+      ...prev,
+      esperienze: prev.esperienze.map((exp) => (exp.id === id ? { ...exp, [field]: value } : exp)),
+    }));
+  };
+
+  const removeExperience = (id) => {
+    setCvData((prev) => ({
+      ...prev,
+      esperienze: prev.esperienze.filter((exp) => exp.id !== id),
+    }));
+  };
+
+  const addEducation = () => {
+    setCvData((prev) => ({
+      ...prev,
+      formazione: [
+        ...prev.formazione,
+        {
+          id: Date.now(),
+          titolo: "",
+          istituto: "",
+          periodo: "",
+          descrizione: "",
+        },
+      ],
+    }));
+  };
+
+  const updateEducation = (id, field, value) => {
+    setCvData((prev) => ({
+      ...prev,
+      formazione: prev.formazione.map((edu) => (edu.id === id ? { ...edu, [field]: value } : edu)),
+    }));
+  };
+
+  const removeEducation = (id) => {
+    setCvData((prev) => ({
+      ...prev,
+      formazione: prev.formazione.filter((edu) => edu.id !== id),
+    }));
+  };
+
+  const addSkill = () => {
+    const skill = cvData.newSkill.trim();
+    if (!skill) return;
+    if (cvData.competenze.includes(skill)) {
+      setCvData((prev) => ({ ...prev, newSkill: "" }));
+      return;
+    }
+    setCvData((prev) => ({
+      ...prev,
+      competenze: [...prev.competenze, skill],
+      newSkill: "",
+    }));
+  };
+
+  const removeSkill = (skillToRemove) => {
+    setCvData((prev) => ({
+      ...prev,
+      competenze: prev.competenze.filter((skill) => skill !== skillToRemove),
+    }));
+  };
+
+  const generateProfileAI = () => {
+    setCvData((prev) => ({
+      ...prev,
+      profilo:
+        "Professionista con esperienza in back office, gestione ordini e supporto clienti. Abituato a operare con precisione su processi amministrativi e operativi, con attenzione alla qualità del servizio, all’uso di strumenti gestionali e al rispetto delle priorità aziendali.",
+    }));
+    pulseSave("Profilo CV migliorato");
+  };
+
+  const improveExperienceAI = () => {
+    setCvData((prev) => {
+      if (prev.esperienze.length === 0) return prev;
+      const updated = [...prev.esperienze];
+      updated[0] = {
+        ...updated[0],
+        descrizione:
+          "Gestione operativa delle richieste cliente, aggiornamento dati su gestionale, supporto ai flussi di back office e monitoraggio dello stato delle pratiche, con attenzione alla precisione, alle tempistiche e alla continuità del servizio.",
+      };
+      return { ...prev, esperienze: updated };
+    });
+    pulseSave("Esperienza migliorata");
+  };
+
+  const suggestSkillsAI = () => {
+    setCvData((prev) => ({
+      ...prev,
+      competenze: [
+        "SAP",
+        "Excel",
+        "Back Office",
+        "Gestione ordini",
+        "Customer Care",
+        "Ticketing",
+        "Data entry",
+        "Precisione operativa",
+        "Problem solving",
+        "Coordinamento attività",
+      ],
+    }));
+    pulseSave("Competenze aggiornate");
+  };
+
+  const adaptCVAI = () => {
+    setCvData((prev) => ({
+      ...prev,
+      profilo:
+        "Profilo orientato a ruoli di back office e order management, con esperienza nel supporto operativo, nell’aggiornamento dati e nella gestione di attività amministrative e customer-facing. Forte attenzione all’accuratezza, alla continuità del servizio e all’utilizzo di strumenti gestionali.",
+      competenze: [
+        "Gestione ordini",
+        "SAP",
+        "Excel",
+        "Back Office",
+        "Customer Support",
+        "Data entry",
+        "Precisione operativa",
+        "Monitoraggio pratiche",
+        "Comunicazione con clienti e reparti interni",
+      ],
+    }));
+    pulseSave("CV adattato all'offerta");
+  };
+
+  const generateCoverLetterAI = () => {
+    setCvData((prev) => ({
+      ...prev,
+      coverLetter:
+        "Gentile Recruiter,\n\nho letto con interesse la vostra opportunità e desidero sottoporre la mia candidatura. Nel mio percorso ho maturato esperienza in attività di back office, gestione ordini, aggiornamento dati e supporto clienti, sviluppando precisione operativa, attenzione alle priorità e capacità di lavorare in modo affidabile su processi strutturati.\n\nRitengo che il mio profilo possa essere in linea con il ruolo ricercato e sarei interessato ad approfondire il contributo che potrei portare alla vostra realtà.\n\nCordiali saluti.",
+    }));
+    pulseSave("Lettera generata");
+  };
+
+  const saveCurrentCV = () => {
+    const newCV = {
+      id: Date.now(),
+      name: `${cvData.nome || "CV"}_${(cvData.ruolo || "Nuovo").replaceAll("/", "-")}.pdf`,
+      role: cvData.ruolo || "Ruolo non specificato",
+      updated: "Adesso",
+      status: cvCompletion >= 80 ? "Completo" : "Bozza",
+    };
+    setSavedCVs((prev) => [newCV, ...prev]);
+    setProfile((prev) => ({ ...prev, cvName: newCV.name }));
+    pulseSave("CV salvato");
   };
 
   if (!authSession.isAuthenticated) {
@@ -1159,7 +1364,7 @@ export default function App() {
               un’interfaccia che ti fa tornare.
             </h1>
             <p>
-              Jobly unisce offerte, candidature, messaggi con le aziende, profilo pubblico e assistente AI in un’unica esperienza moderna.
+              Jobly unisce offerte, candidature, messaggi con le aziende, CV Studio, profilo pubblico e assistente AI in un’unica esperienza moderna.
             </p>
             <div className="chips">
               <Badge className="badge-red">Match intelligenti</Badge>
@@ -1188,7 +1393,6 @@ export default function App() {
                   label: r === "all" ? "Tutte le regioni" : r,
                 }))}
               />
-
               <SelectField
                 value={province}
                 onChange={setProvince}
@@ -1197,7 +1401,6 @@ export default function App() {
                   label: p === "all" ? "Tutte le province" : p,
                 }))}
               />
-
               <SelectField
                 value={comune}
                 onChange={setComune}
@@ -1206,7 +1409,6 @@ export default function App() {
                   label: c === "all" ? "Tutti i comuni" : c,
                 }))}
               />
-
               <SelectField
                 value={zone}
                 onChange={setZone}
@@ -1215,7 +1417,6 @@ export default function App() {
                   label: z === "all" ? "Tutte le zone" : z,
                 }))}
               />
-
               <SelectField
                 value={contract}
                 onChange={setContract}
@@ -1226,7 +1427,6 @@ export default function App() {
                   { value: "Somministrazione", label: "Somministrazione" },
                 ]}
               />
-
               <SelectField
                 value={maxDistance}
                 onChange={setMaxDistance}
@@ -1267,6 +1467,11 @@ export default function App() {
             <button className={`tab ${tab === "profilo" ? "tab-active" : ""}`} onClick={() => setTab("profilo")}>
               <User size={16} />
               <span>Profilo</span>
+            </button>
+
+            <button className={`tab ${tab === "cv" ? "tab-active" : ""}`} onClick={() => setTab("cv")}>
+              <FileText size={16} />
+              <span>CV Studio</span>
             </button>
 
             <button className={`tab ${tab === "ai" ? "tab-active" : ""}`} onClick={() => setTab("ai")}>
@@ -1354,17 +1559,14 @@ export default function App() {
                     <div className="section-label">Totali</div>
                     <p>{applications.length} candidature registrate.</p>
                   </div>
-
                   <div className="inner-box">
                     <div className="section-label">Inviate</div>
                     <p>{applications.filter((a) => a.status === "Inviata").length}</p>
                   </div>
-
                   <div className="inner-box">
                     <div className="section-label">In valutazione</div>
                     <p>{applications.filter((a) => a.status === "In valutazione").length}</p>
                   </div>
-
                   <div className="inner-box">
                     <div className="section-label">Colloqui</div>
                     <p>{applications.filter((a) => a.status === "Colloquio").length}</p>
@@ -1444,7 +1646,7 @@ export default function App() {
                           className={`msg ${
                             msg.sender === "user"
                               ? "msg-user"
-                              : msg.sender === "company"
+                              : msg.sender === "company" || msg.sender === "system"
                               ? "msg-ai"
                               : "msg-ai"
                           }`}
@@ -1573,6 +1775,467 @@ export default function App() {
                 </div>
               </Card>
             </div>
+          )}
+
+          {tab === "cv" && (
+            <>
+              <section>
+                <div className="section-head">
+                  <div>
+                    <h2>CV Studio</h2>
+                    <p>Costruisci, migliora e adatta il tuo CV mantenendo anche la parte messaggi attiva.</p>
+                  </div>
+                  <div className="muted">Completamento CV {cvCompletion}%</div>
+                </div>
+
+                <div className="inner-box" style={{ marginBottom: 20 }}>
+                  <div className="actions" style={{ justifyContent: "space-between", marginTop: 0 }}>
+                    <div className="meta-text small">
+                      {missingCVItems.length > 0
+                        ? `Da completare: ${missingCVItems.join(", ")}`
+                        : "CV completo nelle sezioni principali"}
+                    </div>
+                    <Button className="btn-dark" onClick={saveCurrentCV}>
+                      <Save size={16} />
+                      Salva ora
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="tabs" style={{ marginBottom: 20 }}>
+                  {[
+                    { key: "dashboard", label: "Dashboard" },
+                    { key: "create", label: "Crea CV" },
+                    { key: "improve", label: "Migliora CV" },
+                    { key: "match", label: "Adatta a offerta" },
+                    { key: "letter", label: "Lettera" },
+                  ].map((item) => (
+                    <button
+                      key={item.key}
+                      className={`tab ${cvSection === item.key ? "tab-active" : ""}`}
+                      onClick={() => setCvSection(item.key)}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              {cvSection === "dashboard" && (
+                <div className="two-col">
+                  <Card>
+                    <h3>Azioni principali</h3>
+                    <div className="stack">
+                      <div className="inner-box">
+                        <div className="title-row">
+                          <Upload size={16} color="#ef4444" />
+                          <div className="section-label">Crea nuovo CV</div>
+                        </div>
+                        <p className="meta-text small">Compila i dati personali, profilo, esperienze, formazione e competenze.</p>
+                        <Button className="btn-dark" style={{ marginTop: 12 }} onClick={() => openCVSection("create")}>
+                          Inizia
+                        </Button>
+                      </div>
+
+                      <div className="inner-box">
+                        <div className="title-row">
+                          <Wand2 size={16} color="#ef4444" />
+                          <div className="section-label">Migliora CV</div>
+                        </div>
+                        <p className="meta-text small">Riscrivi il profilo, rinforza le esperienze e rendi il CV più professionale.</p>
+                        <Button className="btn-dark" style={{ marginTop: 12 }} onClick={() => openCVSection("improve")}>
+                          Apri editor
+                        </Button>
+                      </div>
+
+                      <div className="inner-box">
+                        <div className="title-row">
+                          <Target size={16} color="#ef4444" />
+                          <div className="section-label">Adatta a offerta</div>
+                        </div>
+                        <p className="meta-text small">Ottimizza il CV sulla job description scelta dalle offerte.</p>
+                        <Button className="btn-dark" style={{ marginTop: 12 }} onClick={() => openCVSection("match")}>
+                          Adatta
+                        </Button>
+                      </div>
+
+                      <div className="inner-box">
+                        <div className="title-row">
+                          <PenSquare size={16} color="#ef4444" />
+                          <div className="section-label">Lettera di presentazione</div>
+                        </div>
+                        <p className="meta-text small">Genera o modifica una lettera coerente con il ruolo.</p>
+                        <Button className="btn-dark" style={{ marginTop: 12 }} onClick={() => openCVSection("letter")}>
+                          Genera
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+
+                  <Card className="preview-card">
+                    <h3>Stato del tuo CV</h3>
+                    <div className="stack">
+                      <div className="inner-box">
+                        <div className="section-label">Sezioni completate</div>
+                        <div className="chips">
+                          <Badge>{cvData.nome ? "Dati personali" : "Dati mancanti"}</Badge>
+                          <Badge>{cvData.profilo ? "Profilo" : "Profilo mancante"}</Badge>
+                          <Badge>{cvData.esperienze.some((x) => x.ruolo || x.azienda) ? "Esperienze" : "Esperienze mancanti"}</Badge>
+                          <Badge>{cvData.competenze.length > 0 ? "Competenze" : "Competenze mancanti"}</Badge>
+                        </div>
+                      </div>
+
+                      <div className="inner-box">
+                        <div className="section-label">I tuoi CV</div>
+                        {savedCVs.map((cv) => (
+                          <div key={cv.id} style={{ marginBottom: 10 }}>
+                            <div className="offer-title">{cv.name}</div>
+                            <div className="meta-text small">
+                              {cv.role} • {cv.updated} • {cv.status}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </Card>
+                </div>
+              )}
+
+              {cvSection === "create" && (
+                <div className="two-col">
+                  <Card>
+                    <h3>Crea CV</h3>
+                    <div className="stack">
+                      <div className="inner-box">
+                        <div className="title-row">
+                          <User size={16} color="#ef4444" />
+                          <div className="section-label">Dati personali</div>
+                        </div>
+                        <div className="stack">
+                          <Input value={cvData.nome} onChange={(e) => setCvData({ ...cvData, nome: e.target.value })} placeholder="Nome" />
+                          <Input value={cvData.cognome} onChange={(e) => setCvData({ ...cvData, cognome: e.target.value })} placeholder="Cognome" />
+                          <Input value={cvData.email} onChange={(e) => setCvData({ ...cvData, email: e.target.value })} placeholder="Email" />
+                          <Input value={cvData.telefono} onChange={(e) => setCvData({ ...cvData, telefono: e.target.value })} placeholder="Telefono" />
+                          <Input value={cvData.citta} onChange={(e) => setCvData({ ...cvData, citta: e.target.value })} placeholder="Città" />
+                          <Input value={cvData.ruolo} onChange={(e) => setCvData({ ...cvData, ruolo: e.target.value })} placeholder="Ruolo desiderato" />
+                        </div>
+                      </div>
+
+                      <div className="inner-box">
+                        <div className="title-row">
+                          <Sparkles size={16} color="#ef4444" />
+                          <div className="section-label">Profilo professionale</div>
+                        </div>
+                        <Textarea value={cvData.profilo} onChange={(e) => setCvData({ ...cvData, profilo: e.target.value })} placeholder="Profilo professionale" />
+                        <Button className="btn-dark" style={{ marginTop: 12 }} onClick={generateProfileAI}>
+                          <Sparkles size={16} />
+                          Genera profilo con AI
+                        </Button>
+                      </div>
+
+                      <div className="inner-box">
+                        <div className="title-row">
+                          <Briefcase size={16} color="#ef4444" />
+                          <div className="section-label">Esperienze lavorative</div>
+                        </div>
+                        <div className="stack">
+                          {cvData.esperienze.map((exp) => (
+                            <div key={exp.id} className="inner-box">
+                              <div className="actions" style={{ justifyContent: "space-between", marginTop: 0 }}>
+                                <div className="section-label">Esperienza</div>
+                                <Button className="btn-dark" onClick={() => removeExperience(exp.id)}>
+                                  <Trash2 size={16} />
+                                  Rimuovi
+                                </Button>
+                              </div>
+                              <div className="stack">
+                                <Input value={exp.ruolo} onChange={(e) => updateExperience(exp.id, "ruolo", e.target.value)} placeholder="Ruolo" />
+                                <Input value={exp.azienda} onChange={(e) => updateExperience(exp.id, "azienda", e.target.value)} placeholder="Azienda" />
+                                <Input value={exp.periodo} onChange={(e) => updateExperience(exp.id, "periodo", e.target.value)} placeholder="Periodo" />
+                                <Textarea value={exp.descrizione} onChange={(e) => updateExperience(exp.id, "descrizione", e.target.value)} placeholder="Descrizione attività" />
+                              </div>
+                            </div>
+                          ))}
+                          <div className="actions">
+                            <Button className="btn-dark" onClick={addExperience}>
+                              <Plus size={16} />
+                              Aggiungi esperienza
+                            </Button>
+                            <Button className="btn-dark" onClick={improveExperienceAI}>
+                              <Wand2 size={16} />
+                              Migliora prima esperienza
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="inner-box">
+                        <div className="title-row">
+                          <GraduationCap size={16} color="#ef4444" />
+                          <div className="section-label">Formazione</div>
+                        </div>
+                        <div className="stack">
+                          {cvData.formazione.map((edu) => (
+                            <div key={edu.id} className="inner-box">
+                              <div className="actions" style={{ justifyContent: "space-between", marginTop: 0 }}>
+                                <div className="section-label">Formazione</div>
+                                <Button className="btn-dark" onClick={() => removeEducation(edu.id)}>
+                                  <Trash2 size={16} />
+                                  Rimuovi
+                                </Button>
+                              </div>
+                              <div className="stack">
+                                <Input value={edu.titolo} onChange={(e) => updateEducation(edu.id, "titolo", e.target.value)} placeholder="Titolo di studio / corso" />
+                                <Input value={edu.istituto} onChange={(e) => updateEducation(edu.id, "istituto", e.target.value)} placeholder="Istituto / ente" />
+                                <Input value={edu.periodo} onChange={(e) => updateEducation(edu.id, "periodo", e.target.value)} placeholder="Periodo" />
+                                <Textarea value={edu.descrizione} onChange={(e) => updateEducation(edu.id, "descrizione", e.target.value)} placeholder="Dettagli aggiuntivi" />
+                              </div>
+                            </div>
+                          ))}
+                          <Button className="btn-dark" onClick={addEducation}>
+                            <Plus size={16} />
+                            Aggiungi formazione
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="inner-box">
+                        <div className="title-row">
+                          <CheckCircle2 size={16} color="#ef4444" />
+                          <div className="section-label">Competenze</div>
+                        </div>
+                        <div className="actions" style={{ marginTop: 0 }}>
+                          <Input
+                            value={cvData.newSkill}
+                            onChange={(e) => setCvData({ ...cvData, newSkill: e.target.value })}
+                            placeholder="Aggiungi competenza"
+                          />
+                          <Button className="btn-dark" onClick={addSkill}>
+                            <Plus size={16} />
+                            Aggiungi
+                          </Button>
+                        </div>
+
+                        <div className="chips" style={{ marginTop: 12 }}>
+                          {cvData.competenze.map((skill) => (
+                            <span key={skill} className="badge" style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                              {skill}
+                              <button
+                                type="button"
+                                onClick={() => removeSkill(skill)}
+                                style={{
+                                  background: "transparent",
+                                  border: "none",
+                                  color: "inherit",
+                                  cursor: "pointer",
+                                  padding: 0,
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                }}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+
+                        <Button className="btn-dark" style={{ marginTop: 12 }} onClick={suggestSkillsAI}>
+                          <Sparkles size={16} />
+                          Suggerisci competenze
+                        </Button>
+                      </div>
+
+                      <div className="actions">
+                        <Button className="btn-red" onClick={saveCurrentCV}>
+                          <Save size={16} />
+                          Salva CV
+                        </Button>
+                        <Button className="btn-dark">
+                          <Download size={16} />
+                          Export PDF
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+
+                  <Card className="preview-card">
+                    <h3>Anteprima CV</h3>
+                    <div className="stack">
+                      <div>
+                        <div className="preview-name">
+                          {cvData.nome} {cvData.cognome}
+                        </div>
+                        <div className="meta-text">{cvData.ruolo}</div>
+                        <div className="meta-text small">
+                          {cvData.citta}
+                          {cvData.email ? ` • ${cvData.email}` : ""}
+                          {cvData.telefono ? ` • ${cvData.telefono}` : ""}
+                        </div>
+                      </div>
+
+                      <SectionPreview title="Profilo" content={cvData.profilo} emptyText="Aggiungi un profilo professionale." />
+
+                      <div className="inner-box">
+                        <div className="section-label">Esperienze</div>
+                        {cvData.esperienze.map((exp) => (
+                          <div key={exp.id} style={{ marginBottom: 12 }}>
+                            <div className="offer-title">{exp.ruolo || "Ruolo non specificato"}</div>
+                            <div className="meta-text small">
+                              {exp.azienda || "Azienda"} {exp.periodo ? `• ${exp.periodo}` : ""}
+                            </div>
+                            <p>{exp.descrizione || "Descrizione non inserita."}</p>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="inner-box">
+                        <div className="section-label">Competenze</div>
+                        <div className="chips">
+                          {cvData.competenze.map((s) => (
+                            <Badge key={s}>{s}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                </div>
+              )}
+
+              {cvSection === "improve" && (
+                <div className="two-col">
+                  <Card>
+                    <h3>Migliora CV</h3>
+                    <div className="stack">
+                      <div className="actions">
+                        <Button className="btn-dark" onClick={generateProfileAI}>
+                          Migliora profilo
+                        </Button>
+                        <Button className="btn-dark" onClick={improveExperienceAI}>
+                          Riscrivi esperienze
+                        </Button>
+                        <Button className="btn-dark" onClick={suggestSkillsAI}>
+                          Suggerisci competenze
+                        </Button>
+                      </div>
+
+                      <SectionPreview title="Profilo aggiornato" content={cvData.profilo} emptyText="Nessun profilo aggiornato." />
+
+                      <div className="inner-box">
+                        <div className="section-label">Esperienze aggiornate</div>
+                        {cvData.esperienze.map((exp) => (
+                          <div key={exp.id} style={{ marginBottom: 12 }}>
+                            <div className="offer-title">{exp.ruolo || "Ruolo non specificato"}</div>
+                            <p>{exp.descrizione || "Descrizione non inserita."}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </Card>
+
+                  <Card className="preview-card">
+                    <h3>Versione aggiornata</h3>
+                    <div className="stack">
+                      <SectionPreview title="Profilo migliorato" content={cvData.profilo} emptyText="Nessun profilo generato." />
+                      <div className="inner-box">
+                        <div className="section-label">Competenze suggerite</div>
+                        <div className="chips">
+                          {cvData.competenze.map((s) => (
+                            <Badge key={s}>{s}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                </div>
+              )}
+
+              {cvSection === "match" && (
+                <div className="two-col">
+                  <Card>
+                    <h3>Adatta CV a un’offerta</h3>
+                    <div className="stack">
+                      <Textarea
+                        value={cvData.jobDescription}
+                        onChange={(e) => setCvData({ ...cvData, jobDescription: e.target.value })}
+                        placeholder="Incolla qui il testo dell'annuncio"
+                      />
+
+                      <div className="inner-box">
+                        <div className="section-label">Azioni consigliate</div>
+                        <div className="chips">
+                          <Badge>Adatta profilo</Badge>
+                          <Badge>Rafforza competenze</Badge>
+                          <Badge>Personalizza esperienza</Badge>
+                        </div>
+                      </div>
+
+                      <div className="actions">
+                        <Button className="btn-red" onClick={adaptCVAI}>
+                          Adatta il CV
+                        </Button>
+                        <Button className="btn-dark" onClick={generateCoverLetterAI}>
+                          Genera lettera
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+
+                  <Card className="preview-card">
+                    <h3>CV ottimizzato</h3>
+                    <div className="stack">
+                      <SectionPreview title="Profilo adattato" content={cvData.profilo} emptyText="Genera una versione adattata." />
+                      <div className="inner-box">
+                        <div className="section-label">Competenze consigliate</div>
+                        <div className="chips">
+                          {cvData.competenze.map((s) => (
+                            <Badge key={s}>{s}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                </div>
+              )}
+
+              {cvSection === "letter" && (
+                <div className="two-col">
+                  <Card>
+                    <h3>Lettera di presentazione</h3>
+                    <div className="stack">
+                      <Textarea
+                        value={cvData.coverLetter}
+                        onChange={(e) => setCvData({ ...cvData, coverLetter: e.target.value })}
+                        placeholder="Lettera di presentazione"
+                      />
+                      <div className="actions">
+                        <Button className="btn-red" onClick={generateCoverLetterAI}>
+                          Genera con AI
+                        </Button>
+                        <Button className="btn-dark" onClick={() => pulseSave("Lettera salvata")}>
+                          <Save size={16} />
+                          Salva
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+
+                  <Card className="preview-card">
+                    <h3>Consiglio AI</h3>
+                    <div className="inner-box">
+                      <p className="meta-text small">
+                        Mantieni la lettera breve, credibile e specifica. Evita frasi troppo generiche e collega il tuo profilo ai requisiti dell’offerta.
+                      </p>
+                    </div>
+                    <div className="inner-box" style={{ marginTop: 16 }}>
+                      <div className="section-label">CV collegato</div>
+                      <div className="file-box">
+                        <FileText size={16} color="#ef4444" /> {profile.cvName}
+                      </div>
+                    </div>
+                  </Card>
+                </div>
+              )}
+            </>
           )}
 
           {tab === "ai" && (
