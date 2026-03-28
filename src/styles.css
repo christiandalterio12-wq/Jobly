@@ -246,7 +246,7 @@ body,
   font-weight: 800;
   font-size: 14px;
   white-space: nowrap;
-  transition: transform 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+  transition: transform 0.18s ease, background 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 }
 
 .tab:hover {
@@ -565,6 +565,44 @@ body,
   box-shadow: 0 0 0 3px rgba(239,68,68,0.12);
 }
 
+/* FIX INPUT NUMERICI */
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* supporto anche ai numeric input custom */
+input[inputmode="numeric"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+input[inputmode="numeric"]::-webkit-outer-spin-button,
+input[inputmode="numeric"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.theme-dark input[type="number"],
+.theme-dark input[inputmode="numeric"] {
+  background: linear-gradient(180deg, rgba(9, 13, 20, 0.95), rgba(7, 11, 18, 0.9));
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #fff;
+}
+
+.theme-light input[type="number"],
+.theme-light input[inputmode="numeric"] {
+  background: linear-gradient(180deg, rgba(255,255,255,1), rgba(248,250,252,0.98));
+  border: 1px solid rgba(15,23,42,0.12);
+  color: #111827;
+}
+
 /* BUTTONS */
 .btn {
   border: none;
@@ -721,6 +759,29 @@ body,
   cursor: pointer;
   display: inline-flex;
   align-items: center;
+}
+
+/* AUTO APPLY UI */
+.theme-dark .preview-card .inner-box,
+.theme-dark .card .inner-box {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.theme-light .preview-card .inner-box,
+.theme-light .card .inner-box {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.theme-dark .card .inner-box:hover,
+.theme-dark .preview-card .inner-box:hover {
+  border-color: rgba(255,255,255,0.09);
+}
+
+.theme-light .card .inner-box:hover,
+.theme-light .preview-card .inner-box:hover {
+  border-color: rgba(15,23,42,0.1);
 }
 
 /* CHAT */
