@@ -22,6 +22,7 @@ import {
   Sun,
   Moon,
   CheckCircle2,
+  MessageSquare,
 } from "lucide-react";
 
 const STORAGE_KEYS = {
@@ -36,6 +37,8 @@ const STORAGE_KEYS = {
   authSession: "jobly_auth_session",
   chat: "jobly_chat",
   cvData: "jobly_cv_data",
+  recruiterMessages: "jobly_recruiter_messages",
+  activeConversationId: "jobly_active_conversation_id",
 };
 
 const locationData = {
@@ -320,6 +323,45 @@ const defaultNotifications = [
   { id: 3, text: "La tua candidatura per Customer Care Specialist è in valutazione.", read: true },
 ];
 
+const defaultRecruiterMessages = [
+  {
+    id: 1,
+    company: "Randstad",
+    jobTitle: "Customer Care Specialist",
+    applicationId: 101,
+    unread: true,
+    messages: [
+      {
+        id: 1,
+        sender: "company",
+        text: "Buongiorno, abbiamo visionato il suo profilo. Sarebbe disponibile per un primo colloquio telefonico?",
+        time: "Oggi • 10:12",
+      },
+    ],
+  },
+  {
+    id: 2,
+    company: "DHL",
+    jobTitle: "Order Management Specialist",
+    applicationId: null,
+    unread: false,
+    messages: [
+      {
+        id: 1,
+        sender: "company",
+        text: "Il suo profilo sembra interessante per future selezioni. Possiamo aggiornarla nelle prossime settimane.",
+        time: "Ieri • 16:40",
+      },
+      {
+        id: 2,
+        sender: "user",
+        text: "Grazie, resto disponibile per eventuali approfondimenti.",
+        time: "Ieri • 18:05",
+      },
+    ],
+  },
+];
+
 const defaultAuthSession = {
   isAuthenticated: false,
   email: "",
@@ -469,12 +511,12 @@ function AuthScreen({
             </h1>
 
             <p style={{ position: "relative", zIndex: 1 }}>
-              Accedi a offerte, candidature, profilo professionale e CV Studio in un’unica esperienza moderna.
+              Accedi a offerte, candidature, profilo professionale e messaggi con le aziende in un’unica esperienza moderna.
             </p>
 
             <div className="chips" style={{ position: "relative", zIndex: 1 }}>
               <Badge className="badge-red">Accesso sicuro</Badge>
-              <Badge>CV Studio</Badge>
+              <Badge>Messaggi recruiter</Badge>
               <Badge>AI integrata</Badge>
             </div>
           </Card>
@@ -627,6 +669,12 @@ export default function App() {
   const [authSession, setAuthSession] = useState(() => readStorage(STORAGE_KEYS.authSession, defaultAuthSession));
   const [chat, setChat] = useState(() => readStorage(STORAGE_KEYS.chat, defaultChat));
   const [cvData, setCvData] = useState(() => readStorage(STORAGE_KEYS.cvData, defaultCvData));
+  const [recruiterMessages, setRecruiterMessages] = useState(() =>
+    readStorage(STORAGE_KEYS.recruiterMessages, defaultRecruiterMessages)
+  );
+  const [activeConversationId, setActiveConversationId] = useState(() =>
+    readStorage(STORAGE_KEYS.activeConversationId, defaultRecruiterMessages[0]?.id || null)
+  );
 
   const [search, setSearch] = useState("");
   const [region, setRegion] = useState("all");
@@ -638,6 +686,7 @@ export default function App() {
 
   const [saveFeedback, setSaveFeedback] = useState("");
   const [chatInput, setChatInput] = useState("");
+  const [messageInput, setMessageInput] = useState("");
 
   const [authMode, setAuthMode] = useState("login");
   const [authShowPassword, setAuthShowPassword] = useState(false);
@@ -691,6 +740,14 @@ export default function App() {
   }, [cvData]);
 
   useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.recruiterMessages, JSON.stringify(recruiterMessages));
+  }, [recruiterMessages]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.activeConversationId, JSON.stringify(activeConversationId));
+  }, [activeConversationId]);
+
+  useEffect(() => {
     setProvince("all");
     setComune("all");
     setZone("all");
@@ -705,9 +762,7 @@ export default function App() {
     setZone("all");
   }, [comune]);
 
-  const regionOptions = useMemo(() => {
-    return ["all", ...Object.keys(locationData)];
-  }, []);
+  const regionOptions = useMemo(() => ["all", ...Object.keys(locationData)], []);
 
   const provinceOptions = useMemo(() => {
     if (region === "all" || !locationData[region]) return ["all"];
@@ -757,6 +812,16 @@ export default function App() {
     return score;
   }, [profile]);
 
+  const totalUnreadMessages = useMemo(
+    () => recruiterMessages.filter((conv) => conv.unread).length,
+    [recruiterMessages]
+  );
+
+  const activeConversation = useMemo(
+    () => recruiterMessages.find((conv) => conv.id === activeConversationId) || null,
+    [recruiterMessages, activeConversationId]
+  );
+
   const pulseSave = (message) => {
     setSaveFeedback(message);
     window.clearTimeout(window.__joblySaveTimer);
@@ -781,8 +846,9 @@ export default function App() {
       return;
     }
 
+    const newApplicationId = Date.now();
     const newApp = {
-      id: Date.now(),
+      id: newApplicationId,
       offerId: offer.id,
       title: offer.title,
       company: offer.company,
@@ -799,6 +865,33 @@ export default function App() {
       },
       ...prev,
     ]);
+
+    setRecruiterMessages((prev) => {
+      const existsConversation = prev.some(
+        (conv) => conv.company === offer.company && conv.jobTitle === offer.title
+      );
+      if (existsConversation) return prev;
+
+      return [
+        {
+          id: Date.now() + 2,
+          company: offer.company,
+          jobTitle: offer.title,
+          applicationId: newApplicationId,
+          unread: false,
+          messages: [
+            {
+              id: 1,
+              sender: "system",
+              text: `Conversazione creata per la candidatura: ${offer.title}.`,
+              time: "Oggi • adesso",
+            },
+          ],
+        },
+        ...prev,
+      ];
+    });
+
     pulseSave("Candidatura inviata");
   };
 
@@ -838,13 +931,43 @@ export default function App() {
     if (lower.includes("milano")) aiText = "Per Milano puoi usare anche il filtro zona: Quarto Oggiaro, Barona, Bovisa, San Siro, Loreto e altre.";
     if (lower.includes("cv")) aiText = "Per il CV evidenzia gestione ordini, SAP, assistenza clienti e precisione operativa.";
     if (lower.includes("candidature")) aiText = "Controlla la tab Candidature: lì puoi aggiornare stato o rimuovere candidature non utili.";
+    if (lower.includes("messaggi")) aiText = "Nella tab Messaggi trovi le conversazioni con le aziende e puoi rispondere direttamente.";
 
-    setChat((prev) => [
-      ...prev,
-      { who: "user", text: userMsg },
-      { who: "ai", text: aiText },
-    ]);
+    setChat((prev) => [...prev, { who: "user", text: userMsg }, { who: "ai", text: aiText }]);
     setChatInput("");
+  };
+
+  const openConversation = (conversationId) => {
+    setActiveConversationId(conversationId);
+    setRecruiterMessages((prev) =>
+      prev.map((conv) => (conv.id === conversationId ? { ...conv, unread: false } : conv))
+    );
+  };
+
+  const sendRecruiterMessage = () => {
+    if (!messageInput.trim() || !activeConversation) return;
+
+    const now = new Date().toLocaleTimeString("it-IT", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const newMessage = {
+      id: Date.now(),
+      sender: "user",
+      text: messageInput.trim(),
+      time: `Oggi • ${now}`,
+    };
+
+    setRecruiterMessages((prev) =>
+      prev.map((conv) =>
+        conv.id === activeConversation.id
+          ? { ...conv, messages: [...conv.messages, newMessage], unread: false }
+          : conv
+      )
+    );
+    setMessageInput("");
+    pulseSave("Messaggio inviato");
   };
 
   const syncUserIntoProfile = (user) => {
@@ -1036,7 +1159,7 @@ export default function App() {
               un’interfaccia che ti fa tornare.
             </h1>
             <p>
-              Jobly unisce offerte, candidature, profilo pubblico e assistente AI in un’unica esperienza moderna.
+              Jobly unisce offerte, candidature, messaggi con le aziende, profilo pubblico e assistente AI in un’unica esperienza moderna.
             </p>
             <div className="chips">
               <Badge className="badge-red">Match intelligenti</Badge>
@@ -1128,6 +1251,12 @@ export default function App() {
             <button className={`tab ${tab === "candidature" ? "tab-active" : ""}`} onClick={() => setTab("candidature")}>
               <Send size={16} />
               <span>Candidature</span>
+            </button>
+
+            <button className={`tab ${tab === "messaggi" ? "tab-active" : ""}`} onClick={() => setTab("messaggi")}>
+              <MessageSquare size={16} />
+              <span>Messaggi</span>
+              {totalUnreadMessages > 0 ? <Badge className="badge-red">{totalUnreadMessages}</Badge> : null}
             </button>
 
             <button className={`tab ${tab === "notifiche" ? "tab-active" : ""}`} onClick={() => setTab("notifiche")}>
@@ -1241,6 +1370,106 @@ export default function App() {
                     <p>{applications.filter((a) => a.status === "Colloquio").length}</p>
                   </div>
                 </div>
+              </Card>
+            </div>
+          )}
+
+          {tab === "messaggi" && (
+            <div className="two-col">
+              <Card>
+                <div className="section-head">
+                  <div>
+                    <h3>Conversazioni</h3>
+                    <p>Messaggi tra azienda e candidato</p>
+                  </div>
+                </div>
+
+                <div className="stack">
+                  {recruiterMessages.length === 0 ? (
+                    <div className="inner-box">Nessuna conversazione disponibile.</div>
+                  ) : (
+                    recruiterMessages.map((conv) => (
+                      <button
+                        key={conv.id}
+                        type="button"
+                        onClick={() => openConversation(conv.id)}
+                        className="inner-box"
+                        style={{
+                          textAlign: "left",
+                          cursor: "pointer",
+                          border:
+                            conv.id === activeConversationId
+                              ? "1px solid rgba(239,68,68,0.45)"
+                              : undefined,
+                        }}
+                      >
+                        <div className="section-head" style={{ marginBottom: 8 }}>
+                          <div>
+                            <div className="offer-title">{conv.company}</div>
+                            <div className="meta-text small">{conv.jobTitle}</div>
+                          </div>
+                          {conv.unread ? <Badge className="badge-red">Nuovo</Badge> : <Badge>Letto</Badge>}
+                        </div>
+                        <p className="meta-text small">
+                          {conv.messages[conv.messages.length - 1]?.text || "Nessun messaggio"}
+                        </p>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </Card>
+
+              <Card className="preview-card">
+                <div className="section-head">
+                  <div>
+                    <h3>
+                      {activeConversation
+                        ? `${activeConversation.company} — ${activeConversation.jobTitle}`
+                        : "Seleziona una conversazione"}
+                    </h3>
+                    <p>
+                      {activeConversation
+                        ? "Rispondi direttamente dalla piattaforma."
+                        : "Apri una conversazione dalla colonna a sinistra."}
+                    </p>
+                  </div>
+                </div>
+
+                {activeConversation ? (
+                  <>
+                    <div className="chat-box" style={{ maxHeight: 360 }}>
+                      {activeConversation.messages.map((msg) => (
+                        <div
+                          key={msg.id}
+                          className={`msg ${
+                            msg.sender === "user"
+                              ? "msg-user"
+                              : msg.sender === "company"
+                              ? "msg-ai"
+                              : "msg-ai"
+                          }`}
+                        >
+                          <div style={{ marginBottom: 4 }}>{msg.text}</div>
+                          <div style={{ fontSize: 11, opacity: 0.7 }}>{msg.time}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="chat-row">
+                      <Input
+                        value={messageInput}
+                        onChange={(e) => setMessageInput(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && sendRecruiterMessage()}
+                        placeholder="Scrivi una risposta all'azienda"
+                      />
+                      <Button className="btn-red" onClick={sendRecruiterMessage}>
+                        <Send size={16} />
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="inner-box">Nessuna conversazione selezionata.</div>
+                )}
               </Card>
             </div>
           )}
