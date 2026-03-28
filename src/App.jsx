@@ -26,13 +26,13 @@ import {
   GraduationCap,
   Plus,
   Download,
-  PenSquare,
   Target,
   Upload,
   Bot,
   Play,
   SlidersHorizontal,
 } from "lucide-react";
+import { supabase } from "./supabaseClient";
 
 const STORAGE_KEYS = {
   theme: "jobly_theme",
@@ -188,137 +188,6 @@ const defaultProfile = {
   cvName: "CV_Christian.pdf",
 };
 
-const defaultOffers = [
-  {
-    id: 1,
-    title: "Back Office Commerciale",
-    company: "Adecco",
-    region: "Lombardia",
-    province: "Milano",
-    comune: "Milano",
-    zone: "Bovisa",
-    distance: 6,
-    contract: "Tempo indeterminato",
-    salary: "28K-32K",
-    remote: "Ibrido",
-    category: "Amministrazione",
-    match: 91,
-    urgent: true,
-  },
-  {
-    id: 2,
-    title: "Customer Care Specialist",
-    company: "Randstad",
-    region: "Lombardia",
-    province: "Milano",
-    comune: "Milano",
-    zone: "Porta Venezia",
-    distance: 9,
-    contract: "Tempo determinato",
-    salary: "24K-27K",
-    remote: "On-site",
-    category: "Customer Service",
-    match: 84,
-    urgent: false,
-  },
-  {
-    id: 3,
-    title: "Order Management Specialist",
-    company: "DHL",
-    region: "Lombardia",
-    province: "Milano",
-    comune: "Segrate",
-    zone: "",
-    distance: 14,
-    contract: "Tempo indeterminato",
-    salary: "30K-34K",
-    remote: "Ibrido",
-    category: "Logistica",
-    match: 96,
-    urgent: true,
-  },
-  {
-    id: 4,
-    title: "Magazziniere",
-    company: "Amazon",
-    region: "Lombardia",
-    province: "Milano",
-    comune: "Pioltello",
-    zone: "",
-    distance: 18,
-    contract: "Somministrazione",
-    salary: "22K-25K",
-    remote: "On-site",
-    category: "Logistica",
-    match: 75,
-    urgent: false,
-  },
-  {
-    id: 5,
-    title: "Impiegato Ufficio Acquisti",
-    company: "Gi Group",
-    region: "Lombardia",
-    province: "Milano",
-    comune: "Novate Milanese",
-    zone: "",
-    distance: 11,
-    contract: "Tempo indeterminato",
-    salary: "27K-30K",
-    remote: "On-site",
-    category: "Acquisti",
-    match: 79,
-    urgent: false,
-  },
-  {
-    id: 6,
-    title: "Help Desk IT",
-    company: "Sielte",
-    region: "Lombardia",
-    province: "Milano",
-    comune: "Milano",
-    zone: "Loreto",
-    distance: 8,
-    contract: "Tempo indeterminato",
-    salary: "27K-31K",
-    remote: "Ibrido",
-    category: "IT",
-    match: 88,
-    urgent: false,
-  },
-  {
-    id: 7,
-    title: "Addetto Customer Support",
-    company: "Manpower",
-    region: "Lazio",
-    province: "Roma",
-    comune: "Roma",
-    zone: "EUR",
-    distance: 7,
-    contract: "Tempo determinato",
-    salary: "25K-28K",
-    remote: "Ibrido",
-    category: "Customer Service",
-    match: 73,
-    urgent: false,
-  },
-  {
-    id: 8,
-    title: "Back Office Logistico",
-    company: "Page Personnel",
-    region: "Piemonte",
-    province: "Torino",
-    comune: "Torino",
-    zone: "Lingotto",
-    distance: 5,
-    contract: "Tempo indeterminato",
-    salary: "29K-33K",
-    remote: "Ibrido",
-    category: "Logistica",
-    match: 77,
-    urgent: false,
-  },
-];
-
 const defaultApplications = [
   {
     id: 101,
@@ -327,7 +196,6 @@ const defaultApplications = [
     company: "Randstad",
     status: "Inviata",
     date: "Oggi",
-    source: "Manuale",
   },
 ];
 
@@ -404,7 +272,7 @@ const defaultCvData = {
       azienda: "Azienda attuale",
       periodo: "2024 - Oggi",
       descrizione:
-        "Gestione richieste clienti, aggiornamento dati, utilizzo di SAP, supporto operativo e monitoraggio pratiche.",
+        "Gestione richieste clienti, aggiornamento dati su gestionale, supporto operativo e monitoraggio pratiche.",
     },
   ],
   formazione: [
@@ -424,9 +292,8 @@ const defaultCvData = {
 const defaultAutoApplySettings = {
   enabled: false,
   mode: "review",
-  minMatch: "85",
-  minRal: "28000",
-  autoSendThreshold: "92",
+  minMatch: 85,
+  minRal: 28000,
   contract: "all",
   region: "all",
   province: "all",
@@ -437,7 +304,7 @@ const defaultAutoApplySettings = {
   category: "all",
   requiredKeyword: "",
   excludedKeyword: "",
-  maxDailyApplications: "5",
+  maxDailyApplications: 5,
 };
 
 const defaultAutoApplyQueue = [];
@@ -465,21 +332,6 @@ function readStorage(key, fallback) {
   }
 }
 
-function parseSalaryMin(salary) {
-  const first = String(salary || "")
-    .split("-")[0]
-    .replace(/[^\d]/g, "");
-  return Number(first) * 1000 || 0;
-}
-
-function readNumber(value, fallback = 0) {
-  const cleaned = String(value ?? "")
-    .replace(/[^\d]/g, "")
-    .trim();
-  const parsed = Number(cleaned);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
-
 function Badge({ children, className = "" }) {
   return <span className={`badge ${className}`}>{children}</span>;
 }
@@ -490,23 +342,6 @@ function Card({ children, className = "" }) {
 
 function Input(props) {
   return <input {...props} className={`input ${props.className || ""}`} />;
-}
-
-function NumericInput({ value, onChange, placeholder = "", className = "" }) {
-  return (
-    <input
-      value={value}
-      onChange={(e) => {
-        const cleaned = e.target.value.replace(/[^\d]/g, "");
-        onChange(cleaned);
-      }}
-      inputMode="numeric"
-      pattern="[0-9]*"
-      autoComplete="off"
-      placeholder={placeholder}
-      className={`input ${className}`}
-    />
-  );
 }
 
 function Textarea(props) {
@@ -566,7 +401,7 @@ function OfferCard({ offer, saved, onSave, onApply, onGoCV }) {
       </div>
 
       <div className="actions">
-        <Button className="btn-red" onClick={() => onApply(offer, "Manuale")}>
+        <Button className="btn-red" onClick={() => onApply(offer)}>
           Candidati
         </Button>
         <Button className="btn-dark" onClick={() => onSave(offer.id)}>
@@ -772,7 +607,9 @@ export default function App() {
   const [cvSection, setCvSection] = useState(() => readStorage(STORAGE_KEYS.activeCvSection, "dashboard"));
 
   const [profile, setProfile] = useState(() => readStorage(STORAGE_KEYS.profile, defaultProfile));
-  const [offers] = useState(() => readStorage(STORAGE_KEYS.offers, defaultOffers));
+  const [offers, setOffers] = useState([]);
+  const [offersLoading, setOffersLoading] = useState(true);
+  const [offersError, setOffersError] = useState("");
   const [savedIds, setSavedIds] = useState(() => readStorage(STORAGE_KEYS.savedIds, [1]));
   const [applications, setApplications] = useState(() => readStorage(STORAGE_KEYS.applications, defaultApplications));
   const [notifications, setNotifications] = useState(() => readStorage(STORAGE_KEYS.notifications, defaultNotifications));
@@ -880,6 +717,53 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.autoApplyQueue, JSON.stringify(autoApplyQueue));
   }, [autoApplyQueue]);
+
+  useEffect(() => {
+    const fetchOffers = async () => {
+      setOffersLoading(true);
+      setOffersError("");
+
+      const { data, error } = await supabase
+        .from("jobs")
+        .select("*")
+        .eq("status", "active")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Errore caricamento offerte:", error);
+        setOffersError("Impossibile caricare le offerte.");
+        setOffers([]);
+        setOffersLoading(false);
+        return;
+      }
+
+      const mappedOffers = (data || []).map((job) => ({
+        id: job.id,
+        title: job.title || "Titolo non disponibile",
+        company: job.company || "Azienda non disponibile",
+        region: "Lombardia",
+        province: "Milano",
+        comune: job.location || "Milano",
+        zone: "",
+        distance: 10,
+        contract: job.contract || "Contratto non disponibile",
+        salary: job.salary || "N/D",
+        remote: "On-site",
+        category: "Generale",
+        match: 80,
+        urgent: false,
+        applyUrl: job.apply_url || "",
+        external: job.external ?? true,
+        description: job.description || "",
+        status: job.status || "active",
+      }));
+
+      setOffers(mappedOffers);
+      setOffersLoading(false);
+    };
+
+    fetchOffers();
+  }, []);
 
   useEffect(() => {
     setProvince("all");
@@ -1018,30 +902,28 @@ export default function App() {
     pulseSave("Offerte salvate aggiornate");
   };
 
-  const createApplicationFromOffer = (offer, source = "Manuale") => {
+  const applyToOffer = (offer) => {
     const exists = applications.some((a) => a.offerId === offer.id);
-    if (exists) return false;
+    if (exists) {
+      pulseSave("Candidatura già presente");
+      return;
+    }
 
-    const newApplicationId = Date.now() + Math.floor(Math.random() * 1000);
+    const newApplicationId = Date.now();
     const newApp = {
       id: newApplicationId,
       offerId: offer.id,
       title: offer.title,
       company: offer.company,
-      status: source === "Auto Apply AI" ? "Inviata automaticamente" : "Inviata",
+      status: "Inviata",
       date: "Oggi",
-      source,
     };
 
     setApplications((prev) => [newApp, ...prev]);
-
     setNotifications((prev) => [
       {
-        id: Date.now() + Math.floor(Math.random() * 1000),
-        text:
-          source === "Auto Apply AI"
-            ? `Auto Apply AI ha inviato la candidatura per ${offer.title} presso ${offer.company}.`
-            : `Hai inviato la candidatura per ${offer.title} presso ${offer.company}.`,
+        id: Date.now() + 1,
+        text: `Hai inviato la candidatura per ${offer.title} presso ${offer.company}.`,
         read: false,
       },
       ...prev,
@@ -1055,7 +937,7 @@ export default function App() {
 
       return [
         {
-          id: Date.now() + Math.floor(Math.random() * 1000),
+          id: Date.now() + 2,
           company: offer.company,
           jobTitle: offer.title,
           applicationId: newApplicationId,
@@ -1064,10 +946,7 @@ export default function App() {
             {
               id: 1,
               sender: "system",
-              text:
-                source === "Auto Apply AI"
-                  ? `Conversazione creata automaticamente per la candidatura: ${offer.title}.`
-                  : `Conversazione creata per la candidatura: ${offer.title}.`,
+              text: `Conversazione creata per la candidatura: ${offer.title}.`,
               time: "Oggi • adesso",
             },
           ],
@@ -1076,12 +955,7 @@ export default function App() {
       ];
     });
 
-    return true;
-  };
-
-  const applyToOffer = (offer, source = "Manuale") => {
-    const created = createApplicationFromOffer(offer, source);
-    pulseSave(created ? "Candidatura inviata" : "Candidatura già presente");
+    pulseSave("Candidatura inviata");
   };
 
   const updateApplicationStatus = (appId, status) => {
@@ -1454,11 +1328,6 @@ export default function App() {
     const requiredKeyword = autoApplySettings.requiredKeyword.trim().toLowerCase();
     const excludedKeyword = autoApplySettings.excludedKeyword.trim().toLowerCase();
 
-    const minMatch = readNumber(autoApplySettings.minMatch, 85);
-    const minRal = readNumber(autoApplySettings.minRal, 28000);
-    const maxDist = readNumber(autoApplySettings.maxDistance, 20);
-    const autoThreshold = readNumber(autoApplySettings.autoSendThreshold, 92);
-
     return offers
       .filter((offer) => {
         const offerText = [
@@ -1475,10 +1344,10 @@ export default function App() {
           .join(" ")
           .toLowerCase();
 
-        const offerRalMin = parseSalaryMin(offer.salary);
+        const offerRalMin = Number(String(offer.salary).split("-")[0].replace("K", "")) * 1000 || 0;
 
-        const okMatch = offer.match >= minMatch;
-        const okRal = offerRalMin >= minRal;
+        const okMatch = offer.match >= Number(autoApplySettings.minMatch);
+        const okRal = offerRalMin >= Number(autoApplySettings.minRal || 0);
         const okContract =
           autoApplySettings.contract === "all" || offer.contract === autoApplySettings.contract;
         const okRegion =
@@ -1488,7 +1357,7 @@ export default function App() {
         const okComune =
           autoApplySettings.comune === "all" || offer.comune === autoApplySettings.comune;
         const okZone = autoApplySettings.zone === "all" || offer.zone === autoApplySettings.zone;
-        const okDistance = offer.distance <= maxDist;
+        const okDistance = offer.distance <= Number(autoApplySettings.maxDistance || 30);
         const okRemote =
           autoApplySettings.remote === "all" || offer.remote === autoApplySettings.remote;
         const okCategory =
@@ -1513,73 +1382,31 @@ export default function App() {
           notAlreadyApplied
         );
       })
-      .sort((a, b) => b.match - a.match)
-      .map((offer) => {
-        let aiDecision = "Da rivedere";
-        let status = "Pronta";
-        let selected = true;
-
-        if (offer.match >= autoThreshold) {
-          aiDecision = "Invio diretto";
-          status = autoApplySettings.mode === "auto" && autoApplySettings.enabled ? "Pronta auto" : "Pronta";
-          selected = true;
-        }
-
-        return {
-          queueId: `queue_${offer.id}`,
-          offerId: offer.id,
-          title: offer.title,
-          company: offer.company,
-          comune: offer.comune,
-          zone: offer.zone,
-          contract: offer.contract,
-          salary: offer.salary,
-          match: offer.match,
-          remote: offer.remote,
-          category: offer.category,
-          selected,
-          status,
-          aiDecision,
-          reason: `Compatibile con regole Auto Apply AI: match ${offer.match}%, contratto ${offer.contract}, distanza ${offer.distance} km.`,
-        };
-      });
+      .map((offer) => ({
+        queueId: `queue_${offer.id}`,
+        offerId: offer.id,
+        title: offer.title,
+        company: offer.company,
+        comune: offer.comune,
+        zone: offer.zone,
+        contract: offer.contract,
+        salary: offer.salary,
+        match: offer.match,
+        remote: offer.remote,
+        category: offer.category,
+        selected: true,
+        status: "Pronta",
+        reason: `Compatibile con regole Auto Apply AI: match ${offer.match}%, contratto ${offer.contract}, distanza ${offer.distance} km.`,
+      }));
   }, [offers, autoApplySettings, applications]);
 
   const generateAutoApplyQueue = () => {
-    const queue = preparedAutoApplyOffers;
-    setAutoApplyQueue(queue);
-
-    if (queue.length === 0) {
-      pulseSave("Nessuna candidatura coerente con i filtri");
-      return;
-    }
-
-    if (autoApplySettings.enabled && autoApplySettings.mode === "auto") {
-      const maxDaily = readNumber(autoApplySettings.maxDailyApplications, 5);
-      const autoDirect = queue
-        .filter((item) => item.aiDecision === "Invio diretto")
-        .slice(0, maxDaily);
-
-      if (autoDirect.length > 0) {
-        autoDirect.forEach((item) => {
-          const offer = offers.find((o) => o.id === item.offerId);
-          if (offer) createApplicationFromOffer(offer, "Auto Apply AI");
-        });
-
-        setAutoApplyQueue((prev) =>
-          prev.map((item) =>
-            autoDirect.some((x) => x.queueId === item.queueId)
-              ? { ...item, status: "Inviata automaticamente", selected: false }
-              : item
-          )
-        );
-
-        pulseSave(`${autoDirect.length} candidature inviate automaticamente`);
-        return;
-      }
-    }
-
-    pulseSave(`${queue.length} candidature preparate`);
+    setAutoApplyQueue(preparedAutoApplyOffers);
+    pulseSave(
+      preparedAutoApplyOffers.length > 0
+        ? `${preparedAutoApplyOffers.length} candidature preparate`
+        : "Nessuna candidatura coerente con i filtri"
+    );
   };
 
   const toggleQueueSelection = (queueId) => {
@@ -1589,22 +1416,17 @@ export default function App() {
   };
 
   const executeAutoApply = () => {
-    const selected = autoApplyQueue.filter(
-      (item) =>
-        item.selected &&
-        (item.status === "Pronta" || item.status === "Pronta auto" || item.status === "Da rivedere")
-    );
-
+    const selected = autoApplyQueue.filter((item) => item.selected && item.status === "Pronta");
     if (selected.length === 0) {
       pulseSave("Nessuna candidatura selezionata");
       return;
     }
 
-    const limited = selected.slice(0, readNumber(autoApplySettings.maxDailyApplications, 5));
+    const limited = selected.slice(0, Number(autoApplySettings.maxDailyApplications || 5));
 
     limited.forEach((item) => {
       const offer = offers.find((o) => o.id === item.offerId);
-      if (offer) createApplicationFromOffer(offer, "Auto Apply AI");
+      if (offer) applyToOffer(offer);
     });
 
     setAutoApplyQueue((prev) =>
@@ -1811,18 +1633,26 @@ export default function App() {
                 <div className="muted">{filteredOffers.length} risultati</div>
               </div>
 
-              <div className="offer-grid">
-                {filteredOffers.map((offer) => (
-                  <OfferCard
-                    key={offer.id}
-                    offer={offer}
-                    saved={savedIds.includes(offer.id)}
-                    onSave={toggleSaveOffer}
-                    onApply={applyToOffer}
-                    onGoCV={handleGoCV}
-                  />
-                ))}
-              </div>
+              {offersLoading ? (
+                <div className="inner-box">Caricamento offerte...</div>
+              ) : offersError ? (
+                <div className="inner-box">{offersError}</div>
+              ) : filteredOffers.length === 0 ? (
+                <div className="inner-box">Nessuna offerta trovata.</div>
+              ) : (
+                <div className="offer-grid">
+                  {filteredOffers.map((offer) => (
+                    <OfferCard
+                      key={offer.id}
+                      offer={offer}
+                      saved={savedIds.includes(offer.id)}
+                      onSave={toggleSaveOffer}
+                      onApply={applyToOffer}
+                      onGoCV={handleGoCV}
+                    />
+                  ))}
+                </div>
+              )}
             </section>
           )}
 
@@ -1838,7 +1668,7 @@ export default function App() {
                       <div key={app.id} className="inner-box">
                         <div className="offer-title">{app.title}</div>
                         <div className="meta-text small">
-                          {app.company} • {app.date} • {app.source || "Manuale"}
+                          {app.company} • {app.date}
                         </div>
                         <div className="actions">
                           <SelectField
@@ -1846,7 +1676,6 @@ export default function App() {
                             onChange={(value) => updateApplicationStatus(app.id, value)}
                             options={[
                               { value: "Inviata", label: "Inviata" },
-                              { value: "Inviata automaticamente", label: "Inviata automaticamente" },
                               { value: "In valutazione", label: "In valutazione" },
                               { value: "Colloquio", label: "Colloquio" },
                               { value: "Chiusa", label: "Chiusa" },
@@ -1871,12 +1700,12 @@ export default function App() {
                     <p>{applications.length} candidature registrate.</p>
                   </div>
                   <div className="inner-box">
-                    <div className="section-label">Manuali</div>
-                    <p>{applications.filter((a) => (a.source || "Manuale") === "Manuale").length}</p>
+                    <div className="section-label">Inviate</div>
+                    <p>{applications.filter((a) => a.status === "Inviata").length}</p>
                   </div>
                   <div className="inner-box">
-                    <div className="section-label">Auto Apply AI</div>
-                    <p>{applications.filter((a) => a.source === "Auto Apply AI").length}</p>
+                    <div className="section-label">In valutazione</div>
+                    <p>{applications.filter((a) => a.status === "In valutazione").length}</p>
                   </div>
                   <div className="inner-box">
                     <div className="section-label">Colloqui</div>
@@ -2172,7 +2001,7 @@ export default function App() {
                           <Bot size={16} color="#ef4444" />
                           <div className="section-label">Auto Apply AI</div>
                         </div>
-                        <p className="meta-text small">Imposta filtri, prepara la coda e invia candidature coerenti in modo assistito o automatico.</p>
+                        <p className="meta-text small">Imposta filtri, prepara la coda e invia candidature coerenti in modo assistito.</p>
                         <Button className="btn-dark" style={{ marginTop: 12 }} onClick={() => openCVSection("autoapply")}>
                           Configura
                         </Button>
@@ -2209,7 +2038,7 @@ export default function App() {
                         <div className="section-label">Auto Apply AI</div>
                         <p className="meta-text small">
                           {autoApplyQueue.length > 0
-                            ? `${autoApplyQueue.filter((x) => !String(x.status).includes("Inviata")).length} candidature in coda`
+                            ? `${autoApplyQueue.filter((x) => x.status === "Pronta").length} candidature pronte`
                             : "Nessuna coda preparata"}
                         </p>
                       </div>
@@ -2595,38 +2424,23 @@ export default function App() {
                             ]}
                           />
 
-                          <div>
-                            <div className="section-label">Match minimo %</div>
-                            <NumericInput
-                              value={autoApplySettings.minMatch}
-                              onChange={(value) =>
-                                setAutoApplySettings((prev) => ({ ...prev, minMatch: value }))
-                              }
-                              placeholder="85"
-                            />
-                          </div>
+                          <Input
+                            type="number"
+                            value={autoApplySettings.minMatch}
+                            onChange={(e) =>
+                              setAutoApplySettings((prev) => ({ ...prev, minMatch: e.target.value }))
+                            }
+                            placeholder="Match minimo %"
+                          />
 
-                          <div>
-                            <div className="section-label">RAL minima</div>
-                            <NumericInput
-                              value={autoApplySettings.minRal}
-                              onChange={(value) =>
-                                setAutoApplySettings((prev) => ({ ...prev, minRal: value }))
-                              }
-                              placeholder="28000"
-                            />
-                          </div>
-
-                          <div>
-                            <div className="section-label">Soglia invio diretto %</div>
-                            <NumericInput
-                              value={autoApplySettings.autoSendThreshold}
-                              onChange={(value) =>
-                                setAutoApplySettings((prev) => ({ ...prev, autoSendThreshold: value }))
-                              }
-                              placeholder="92"
-                            />
-                          </div>
+                          <Input
+                            type="number"
+                            value={autoApplySettings.minRal}
+                            onChange={(e) =>
+                              setAutoApplySettings((prev) => ({ ...prev, minRal: e.target.value }))
+                            }
+                            placeholder="RAL minima"
+                          />
 
                           <SelectField
                             value={autoApplySettings.contract}
@@ -2760,19 +2574,17 @@ export default function App() {
                             placeholder="Keyword esclusa"
                           />
 
-                          <div>
-                            <div className="section-label">Massimo candidature giornaliere</div>
-                            <NumericInput
-                              value={autoApplySettings.maxDailyApplications}
-                              onChange={(value) =>
-                                setAutoApplySettings((prev) => ({
-                                  ...prev,
-                                  maxDailyApplications: value,
-                                }))
-                              }
-                              placeholder="5"
-                            />
-                          </div>
+                          <Input
+                            type="number"
+                            value={autoApplySettings.maxDailyApplications}
+                            onChange={(e) =>
+                              setAutoApplySettings((prev) => ({
+                                ...prev,
+                                maxDailyApplications: e.target.value,
+                              }))
+                            }
+                            placeholder="Massimo candidature giornaliere"
+                          />
                         </div>
                       </div>
 
@@ -2802,9 +2614,8 @@ export default function App() {
                             ? "semi-automatica"
                             : "automatica"}
                           {" • "}
-                          Match minimo: {readNumber(autoApplySettings.minMatch, 85)}%
-                          {" • "}
-                          Invio diretto sopra: {readNumber(autoApplySettings.autoSendThreshold, 92)}%
+                          Match minimo: {autoApplySettings.minMatch}% {" • "}
+                          RAL minima: €{Number(autoApplySettings.minRal || 0).toLocaleString("it-IT")}
                         </p>
                       </div>
 
@@ -2826,9 +2637,7 @@ export default function App() {
                                   {item.zone ? `, ${item.zone}` : ""}
                                 </div>
                               </div>
-                              <Badge className={String(item.status).includes("Inviata") ? "badge-red" : ""}>
-                                {item.status}
-                              </Badge>
+                              <Badge className={item.status === "Inviata" ? "badge-red" : ""}>{item.status}</Badge>
                             </div>
 
                             <div className="chips">
@@ -2836,7 +2645,6 @@ export default function App() {
                               <Badge>{item.contract}</Badge>
                               <Badge>{item.salary}</Badge>
                               <Badge>{item.remote}</Badge>
-                              <Badge>{item.aiDecision}</Badge>
                             </div>
 
                             <p className="meta-text small" style={{ marginTop: 10 }}>
@@ -2844,11 +2652,9 @@ export default function App() {
                             </p>
 
                             <div className="actions">
-                              {!String(item.status).includes("Inviata") && (
-                                <Button className="btn-dark" onClick={() => toggleQueueSelection(item.queueId)}>
-                                  {item.selected ? "Deseleziona" : "Seleziona"}
-                                </Button>
-                              )}
+                              <Button className="btn-dark" onClick={() => toggleQueueSelection(item.queueId)}>
+                                {item.selected ? "Deseleziona" : "Seleziona"}
+                              </Button>
                               <Button className="btn-dark" onClick={() => setCvSection("match")}>
                                 <Wand2 size={16} />
                                 Adatta CV
@@ -2884,7 +2690,7 @@ export default function App() {
                   <div className="inner-box">
                     <div className="section-label">Suggerimento rapido</div>
                     <p className="meta-text small">
-                      Per Auto Apply AI imposta prima filtri duri: match minimo, RAL minima, contratto, distanza e soglia invio diretto.
+                      Per Auto Apply AI imposta prima filtri duri: match minimo, RAL minima, contratto e distanza.
                     </p>
                   </div>
                 </div>
