@@ -29,6 +29,9 @@ import {
   PenSquare,
   Target,
   Upload,
+  Bot,
+  Play,
+  SlidersHorizontal,
 } from "lucide-react";
 
 const STORAGE_KEYS = {
@@ -47,6 +50,8 @@ const STORAGE_KEYS = {
   recruiterMessages: "jobly_recruiter_messages",
   activeConversationId: "jobly_active_conversation_id",
   savedCVs: "jobly_saved_cvs",
+  autoApplySettings: "jobly_auto_apply_settings",
+  autoApplyQueue: "jobly_auto_apply_queue",
 };
 
 const locationData = {
@@ -280,6 +285,38 @@ const defaultOffers = [
     match: 88,
     urgent: false,
   },
+  {
+    id: 7,
+    title: "Addetto Customer Support",
+    company: "Manpower",
+    region: "Lazio",
+    province: "Roma",
+    comune: "Roma",
+    zone: "EUR",
+    distance: 7,
+    contract: "Tempo determinato",
+    salary: "25K-28K",
+    remote: "Ibrido",
+    category: "Customer Service",
+    match: 73,
+    urgent: false,
+  },
+  {
+    id: 8,
+    title: "Back Office Logistico",
+    company: "Page Personnel",
+    region: "Piemonte",
+    province: "Torino",
+    comune: "Torino",
+    zone: "Lingotto",
+    distance: 5,
+    contract: "Tempo indeterminato",
+    salary: "29K-33K",
+    remote: "Ibrido",
+    category: "Logistica",
+    match: 77,
+    urgent: false,
+  },
 ];
 
 const defaultApplications = [
@@ -382,6 +419,26 @@ const defaultCvData = {
   coverLetter:
     "Gentile Recruiter, desidero sottoporre la mia candidatura per il ruolo indicato. Ho maturato esperienza in attività operative, customer support e gestione ordini, con attenzione alla precisione e alla continuità del servizio.",
 };
+
+const defaultAutoApplySettings = {
+  enabled: false,
+  mode: "review",
+  minMatch: 85,
+  minRal: 28000,
+  contract: "all",
+  region: "all",
+  province: "all",
+  comune: "all",
+  zone: "all",
+  maxDistance: "20",
+  remote: "all",
+  category: "all",
+  requiredKeyword: "",
+  excludedKeyword: "",
+  maxDailyApplications: 5,
+};
+
+const defaultAutoApplyQueue = [];
 
 const defaultAuthSession = {
   isAuthenticated: false,
@@ -536,13 +593,13 @@ function AuthScreen({
             </h1>
 
             <p style={{ position: "relative", zIndex: 1 }}>
-              Accedi a offerte, candidature, messaggi con le aziende, profilo professionale e CV Studio in un’unica esperienza moderna.
+              Accedi a offerte, candidature, messaggi con le aziende, CV Studio e Auto Apply AI in un’unica esperienza moderna.
             </p>
 
             <div className="chips" style={{ position: "relative", zIndex: 1 }}>
               <Badge className="badge-red">Accesso sicuro</Badge>
-              <Badge>Messaggi recruiter</Badge>
               <Badge>CV Studio</Badge>
+              <Badge>Auto Apply AI</Badge>
             </div>
           </Card>
 
@@ -696,6 +753,12 @@ export default function App() {
   const [activeConversationId, setActiveConversationId] = useState(() =>
     readStorage(STORAGE_KEYS.activeConversationId, defaultRecruiterMessages[0]?.id || null)
   );
+  const [autoApplySettings, setAutoApplySettings] = useState(() =>
+    readStorage(STORAGE_KEYS.autoApplySettings, defaultAutoApplySettings)
+  );
+  const [autoApplyQueue, setAutoApplyQueue] = useState(() =>
+    readStorage(STORAGE_KEYS.autoApplyQueue, defaultAutoApplyQueue)
+  );
 
   const [search, setSearch] = useState("");
   const [region, setRegion] = useState("all");
@@ -777,6 +840,14 @@ export default function App() {
   }, [activeConversationId]);
 
   useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.autoApplySettings, JSON.stringify(autoApplySettings));
+  }, [autoApplySettings]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.autoApplyQueue, JSON.stringify(autoApplyQueue));
+  }, [autoApplyQueue]);
+
+  useEffect(() => {
     setProvince("all");
     setComune("all");
     setZone("all");
@@ -808,6 +879,31 @@ export default function App() {
     const zones = locationData[region]?.[province]?.[comune] || [];
     return ["all", ...zones];
   }, [region, province, comune]);
+
+  const autoRegionOptions = regionOptions;
+  const autoProvinceOptions = useMemo(() => {
+    if (autoApplySettings.region === "all" || !locationData[autoApplySettings.region]) return ["all"];
+    return ["all", ...Object.keys(locationData[autoApplySettings.region])];
+  }, [autoApplySettings.region]);
+
+  const autoComuneOptions = useMemo(() => {
+    if (autoApplySettings.region === "all" || autoApplySettings.province === "all") return ["all"];
+    const comuniMap = locationData[autoApplySettings.region]?.[autoApplySettings.province] || {};
+    return ["all", ...Object.keys(comuniMap)];
+  }, [autoApplySettings.region, autoApplySettings.province]);
+
+  const autoZoneOptions = useMemo(() => {
+    if (
+      autoApplySettings.region === "all" ||
+      autoApplySettings.province === "all" ||
+      autoApplySettings.comune === "all"
+    ) {
+      return ["all"];
+    }
+    const zones =
+      locationData[autoApplySettings.region]?.[autoApplySettings.province]?.[autoApplySettings.comune] || [];
+    return ["all", ...zones];
+  }, [autoApplySettings.region, autoApplySettings.province, autoApplySettings.comune]);
 
   const filteredOffers = useMemo(() => {
     return offers.filter((o) => {
@@ -982,6 +1078,7 @@ export default function App() {
     if (lower.includes("cv")) aiText = "Per il CV evidenzia gestione ordini, SAP, assistenza clienti e precisione operativa.";
     if (lower.includes("candidature")) aiText = "Controlla la tab Candidature: lì puoi aggiornare stato o rimuovere candidature non utili.";
     if (lower.includes("messaggi")) aiText = "Nella tab Messaggi trovi le conversazioni con le aziende e puoi rispondere direttamente.";
+    if (lower.includes("auto apply")) aiText = "Dentro CV Studio trovi Auto Apply AI: imposti filtri, prepari la coda e invii solo le candidature coerenti.";
 
     setChat((prev) => [...prev, { who: "user", text: userMsg }, { who: "ai", text: aiText }]);
     setChatInput("");
@@ -1030,7 +1127,6 @@ export default function App() {
   const handleLogin = () => {
     setAuthError("");
     setAuthSuccess("");
-
     const email = authForm.email.trim().toLowerCase();
     const password = authForm.password.trim();
 
@@ -1050,14 +1146,12 @@ export default function App() {
       return;
     }
 
-    const session = {
+    setAuthSession({
       isAuthenticated: true,
       email: user.email,
       name: user.name,
       isDemo: false,
-    };
-
-    setAuthSession(session);
+    });
     syncUserIntoProfile(user);
     setAuthForm({ name: "", email: "", password: "", confirmPassword: "" });
     setAuthSuccess("Accesso effettuato.");
@@ -1095,7 +1189,12 @@ export default function App() {
 
     const newUser = { id: Date.now(), name, email, password };
     setAuthUsers((prev) => [...prev, newUser]);
-    setAuthSession({ isAuthenticated: true, email, name, isDemo: false });
+    setAuthSession({
+      isAuthenticated: true,
+      email,
+      name,
+      isDemo: false,
+    });
     syncUserIntoProfile(newUser);
     setAuthForm({ name: "", email: "", password: "", confirmPassword: "" });
     setAuthSuccess("Account creato con successo.");
@@ -1104,8 +1203,8 @@ export default function App() {
   const handleForgotPassword = () => {
     setAuthError("");
     setAuthSuccess("");
-
     const email = authForm.email.trim().toLowerCase();
+
     if (!email) {
       setAuthError("Inserisci la tua email.");
       return;
@@ -1307,6 +1406,122 @@ export default function App() {
     pulseSave("CV salvato");
   };
 
+  const preparedAutoApplyOffers = useMemo(() => {
+    const requiredKeyword = autoApplySettings.requiredKeyword.trim().toLowerCase();
+    const excludedKeyword = autoApplySettings.excludedKeyword.trim().toLowerCase();
+
+    return offers
+      .filter((offer) => {
+        const offerText = [
+          offer.title,
+          offer.company,
+          offer.region,
+          offer.province,
+          offer.comune,
+          offer.zone,
+          offer.category,
+          offer.contract,
+          offer.remote,
+        ]
+          .join(" ")
+          .toLowerCase();
+
+        const offerRalMin = Number(String(offer.salary).split("-")[0].replace("K", "")) * 1000 || 0;
+
+        const okMatch = offer.match >= Number(autoApplySettings.minMatch);
+        const okRal = offerRalMin >= Number(autoApplySettings.minRal || 0);
+        const okContract =
+          autoApplySettings.contract === "all" || offer.contract === autoApplySettings.contract;
+        const okRegion =
+          autoApplySettings.region === "all" || offer.region === autoApplySettings.region;
+        const okProvince =
+          autoApplySettings.province === "all" || offer.province === autoApplySettings.province;
+        const okComune =
+          autoApplySettings.comune === "all" || offer.comune === autoApplySettings.comune;
+        const okZone = autoApplySettings.zone === "all" || offer.zone === autoApplySettings.zone;
+        const okDistance = offer.distance <= Number(autoApplySettings.maxDistance || 30);
+        const okRemote =
+          autoApplySettings.remote === "all" || offer.remote === autoApplySettings.remote;
+        const okCategory =
+          autoApplySettings.category === "all" || offer.category === autoApplySettings.category;
+        const okRequired = !requiredKeyword || offerText.includes(requiredKeyword);
+        const okExcluded = !excludedKeyword || !offerText.includes(excludedKeyword);
+        const notAlreadyApplied = !applications.some((app) => app.offerId === offer.id);
+
+        return (
+          okMatch &&
+          okRal &&
+          okContract &&
+          okRegion &&
+          okProvince &&
+          okComune &&
+          okZone &&
+          okDistance &&
+          okRemote &&
+          okCategory &&
+          okRequired &&
+          okExcluded &&
+          notAlreadyApplied
+        );
+      })
+      .map((offer) => ({
+        queueId: `queue_${offer.id}`,
+        offerId: offer.id,
+        title: offer.title,
+        company: offer.company,
+        comune: offer.comune,
+        zone: offer.zone,
+        contract: offer.contract,
+        salary: offer.salary,
+        match: offer.match,
+        remote: offer.remote,
+        category: offer.category,
+        selected: true,
+        status: "Pronta",
+        reason: `Compatibile con regole Auto Apply AI: match ${offer.match}%, contratto ${offer.contract}, distanza ${offer.distance} km.`,
+      }));
+  }, [offers, autoApplySettings, applications]);
+
+  const generateAutoApplyQueue = () => {
+    setAutoApplyQueue(preparedAutoApplyOffers);
+    pulseSave(
+      preparedAutoApplyOffers.length > 0
+        ? `${preparedAutoApplyOffers.length} candidature preparate`
+        : "Nessuna candidatura coerente con i filtri"
+    );
+  };
+
+  const toggleQueueSelection = (queueId) => {
+    setAutoApplyQueue((prev) =>
+      prev.map((item) => (item.queueId === queueId ? { ...item, selected: !item.selected } : item))
+    );
+  };
+
+  const executeAutoApply = () => {
+    const selected = autoApplyQueue.filter((item) => item.selected && item.status === "Pronta");
+    if (selected.length === 0) {
+      pulseSave("Nessuna candidatura selezionata");
+      return;
+    }
+
+    const limited = selected.slice(0, Number(autoApplySettings.maxDailyApplications || 5));
+
+    limited.forEach((item) => {
+      const offer = offers.find((o) => o.id === item.offerId);
+      if (offer) applyToOffer(offer);
+    });
+
+    setAutoApplyQueue((prev) =>
+      prev.map((item) =>
+        limited.some((sel) => sel.queueId === item.queueId)
+          ? { ...item, status: "Inviata", selected: false }
+          : item
+      )
+    );
+
+    pulseSave(`${limited.length} candidature inviate da Auto Apply AI`);
+  };
+
   if (!authSession.isAuthenticated) {
     return (
       <AuthScreen
@@ -1364,7 +1579,7 @@ export default function App() {
               un’interfaccia che ti fa tornare.
             </h1>
             <p>
-              Jobly unisce offerte, candidature, messaggi con le aziende, CV Studio, profilo pubblico e assistente AI in un’unica esperienza moderna.
+              Jobly unisce offerte, candidature, messaggi con le aziende, CV Studio e Auto Apply AI in un’unica esperienza moderna.
             </p>
             <div className="chips">
               <Badge className="badge-red">Match intelligenti</Badge>
@@ -1529,7 +1744,6 @@ export default function App() {
                         <div className="meta-text small">
                           {app.company} • {app.date}
                         </div>
-
                         <div className="actions">
                           <SelectField
                             value={app.status}
@@ -1712,12 +1926,10 @@ export default function App() {
             <div className="two-col">
               <Card>
                 <h3>Area personale</h3>
-
                 <div className="progress-label">
                   <span>Completamento profilo</span>
                   <span>{profileCompletion}%</span>
                 </div>
-
                 <div className="progress-bar">
                   <div className="progress-fill" style={{ width: `${profileCompletion}%` }} />
                 </div>
@@ -1729,7 +1941,6 @@ export default function App() {
                   <Textarea value={profile.bio} onChange={(e) => setProfile({ ...profile, bio: e.target.value })} placeholder="Bio" />
                   <Textarea value={profile.skills} onChange={(e) => setProfile({ ...profile, skills: e.target.value })} placeholder="Competenze" />
                   <Input value={profile.cvName} onChange={(e) => setProfile({ ...profile, cvName: e.target.value })} placeholder="Nome CV" />
-
                   <Button className="btn-red" onClick={saveProfile}>
                     <Save size={16} />
                     Salva profilo
@@ -1739,7 +1950,6 @@ export default function App() {
 
               <Card className="preview-card">
                 <h3>Anteprima recruiter</h3>
-
                 <div className="preview-head">
                   <div className="avatar">{profile.name?.[0] || "J"}</div>
                   <div>
@@ -1783,7 +1993,7 @@ export default function App() {
                 <div className="section-head">
                   <div>
                     <h2>CV Studio</h2>
-                    <p>Costruisci, migliora e adatta il tuo CV mantenendo anche la parte messaggi attiva.</p>
+                    <p>Costruisci, migliora, adatta e automatizza le candidature con Auto Apply AI.</p>
                   </div>
                   <div className="muted">Completamento CV {cvCompletion}%</div>
                 </div>
@@ -1809,6 +2019,7 @@ export default function App() {
                     { key: "improve", label: "Migliora CV" },
                     { key: "match", label: "Adatta a offerta" },
                     { key: "letter", label: "Lettera" },
+                    { key: "autoapply", label: "Auto Apply AI" },
                   ].map((item) => (
                     <button
                       key={item.key}
@@ -1861,12 +2072,12 @@ export default function App() {
 
                       <div className="inner-box">
                         <div className="title-row">
-                          <PenSquare size={16} color="#ef4444" />
-                          <div className="section-label">Lettera di presentazione</div>
+                          <Bot size={16} color="#ef4444" />
+                          <div className="section-label">Auto Apply AI</div>
                         </div>
-                        <p className="meta-text small">Genera o modifica una lettera coerente con il ruolo.</p>
-                        <Button className="btn-dark" style={{ marginTop: 12 }} onClick={() => openCVSection("letter")}>
-                          Genera
+                        <p className="meta-text small">Imposta filtri, prepara la coda e invia candidature coerenti in modo assistito.</p>
+                        <Button className="btn-dark" style={{ marginTop: 12 }} onClick={() => openCVSection("autoapply")}>
+                          Configura
                         </Button>
                       </div>
                     </div>
@@ -1895,6 +2106,15 @@ export default function App() {
                             </div>
                           </div>
                         ))}
+                      </div>
+
+                      <div className="inner-box">
+                        <div className="section-label">Auto Apply AI</div>
+                        <p className="meta-text small">
+                          {autoApplyQueue.length > 0
+                            ? `${autoApplyQueue.filter((x) => x.status === "Pronta").length} candidature pronte`
+                            : "Nessuna coda preparata"}
+                        </p>
                       </div>
                     </div>
                   </Card>
@@ -2235,6 +2455,292 @@ export default function App() {
                   </Card>
                 </div>
               )}
+
+              {cvSection === "autoapply" && (
+                <div className="two-col">
+                  <Card>
+                    <div className="section-head">
+                      <div>
+                        <h3>Auto Apply AI</h3>
+                        <p>Imposta la strategia e fai preparare all’AI solo le candidature coerenti.</p>
+                      </div>
+                    </div>
+
+                    <div className="stack">
+                      <div className="inner-box">
+                        <div className="title-row">
+                          <SlidersHorizontal size={16} color="#ef4444" />
+                          <div className="section-label">Regole candidatura</div>
+                        </div>
+
+                        <div className="stack">
+                          <div className="actions" style={{ marginTop: 0 }}>
+                            <label className="meta-text small" style={{ minWidth: 140 }}>Auto Apply attivo</label>
+                            <SelectField
+                              value={autoApplySettings.enabled ? "yes" : "no"}
+                              onChange={(value) =>
+                                setAutoApplySettings((prev) => ({ ...prev, enabled: value === "yes" }))
+                              }
+                              options={[
+                                { value: "no", label: "No" },
+                                { value: "yes", label: "Sì" },
+                              ]}
+                            />
+                          </div>
+
+                          <SelectField
+                            value={autoApplySettings.mode}
+                            onChange={(value) => setAutoApplySettings((prev) => ({ ...prev, mode: value }))}
+                            options={[
+                              { value: "review", label: "Modalità assistita" },
+                              { value: "semi", label: "Semi-automatica" },
+                              { value: "auto", label: "Automatica" },
+                            ]}
+                          />
+
+                          <Input
+                            type="number"
+                            value={autoApplySettings.minMatch}
+                            onChange={(e) =>
+                              setAutoApplySettings((prev) => ({ ...prev, minMatch: e.target.value }))
+                            }
+                            placeholder="Match minimo %"
+                          />
+
+                          <Input
+                            type="number"
+                            value={autoApplySettings.minRal}
+                            onChange={(e) =>
+                              setAutoApplySettings((prev) => ({ ...prev, minRal: e.target.value }))
+                            }
+                            placeholder="RAL minima"
+                          />
+
+                          <SelectField
+                            value={autoApplySettings.contract}
+                            onChange={(value) => setAutoApplySettings((prev) => ({ ...prev, contract: value }))}
+                            options={[
+                              { value: "all", label: "Tutti i contratti" },
+                              { value: "Tempo indeterminato", label: "Tempo indeterminato" },
+                              { value: "Tempo determinato", label: "Tempo determinato" },
+                              { value: "Somministrazione", label: "Somministrazione" },
+                            ]}
+                          />
+
+                          <SelectField
+                            value={autoApplySettings.region}
+                            onChange={(value) =>
+                              setAutoApplySettings((prev) => ({
+                                ...prev,
+                                region: value,
+                                province: "all",
+                                comune: "all",
+                                zone: "all",
+                              }))
+                            }
+                            options={autoRegionOptions.map((r) => ({
+                              value: r,
+                              label: r === "all" ? "Tutte le regioni" : r,
+                            }))}
+                          />
+
+                          <SelectField
+                            value={autoApplySettings.province}
+                            onChange={(value) =>
+                              setAutoApplySettings((prev) => ({
+                                ...prev,
+                                province: value,
+                                comune: "all",
+                                zone: "all",
+                              }))
+                            }
+                            options={autoProvinceOptions.map((p) => ({
+                              value: p,
+                              label: p === "all" ? "Tutte le province" : p,
+                            }))}
+                          />
+
+                          <SelectField
+                            value={autoApplySettings.comune}
+                            onChange={(value) =>
+                              setAutoApplySettings((prev) => ({
+                                ...prev,
+                                comune: value,
+                                zone: "all",
+                              }))
+                            }
+                            options={autoComuneOptions.map((c) => ({
+                              value: c,
+                              label: c === "all" ? "Tutti i comuni" : c,
+                            }))}
+                          />
+
+                          <SelectField
+                            value={autoApplySettings.zone}
+                            onChange={(value) =>
+                              setAutoApplySettings((prev) => ({ ...prev, zone: value }))
+                            }
+                            options={autoZoneOptions.map((z) => ({
+                              value: z,
+                              label: z === "all" ? "Tutte le zone" : z,
+                            }))}
+                          />
+
+                          <SelectField
+                            value={autoApplySettings.maxDistance}
+                            onChange={(value) =>
+                              setAutoApplySettings((prev) => ({ ...prev, maxDistance: value }))
+                            }
+                            options={[
+                              { value: "5", label: "5 km" },
+                              { value: "10", label: "10 km" },
+                              { value: "20", label: "20 km" },
+                              { value: "30", label: "30 km" },
+                            ]}
+                          />
+
+                          <SelectField
+                            value={autoApplySettings.remote}
+                            onChange={(value) =>
+                              setAutoApplySettings((prev) => ({ ...prev, remote: value }))
+                            }
+                            options={[
+                              { value: "all", label: "Tutte le modalità" },
+                              { value: "Ibrido", label: "Ibrido" },
+                              { value: "On-site", label: "On-site" },
+                            ]}
+                          />
+
+                          <SelectField
+                            value={autoApplySettings.category}
+                            onChange={(value) =>
+                              setAutoApplySettings((prev) => ({ ...prev, category: value }))
+                            }
+                            options={[
+                              { value: "all", label: "Tutte le categorie" },
+                              { value: "Amministrazione", label: "Amministrazione" },
+                              { value: "Customer Service", label: "Customer Service" },
+                              { value: "Logistica", label: "Logistica" },
+                              { value: "Acquisti", label: "Acquisti" },
+                              { value: "IT", label: "IT" },
+                            ]}
+                          />
+
+                          <Input
+                            value={autoApplySettings.requiredKeyword}
+                            onChange={(e) =>
+                              setAutoApplySettings((prev) => ({
+                                ...prev,
+                                requiredKeyword: e.target.value,
+                              }))
+                            }
+                            placeholder="Keyword richiesta"
+                          />
+
+                          <Input
+                            value={autoApplySettings.excludedKeyword}
+                            onChange={(e) =>
+                              setAutoApplySettings((prev) => ({
+                                ...prev,
+                                excludedKeyword: e.target.value,
+                              }))
+                            }
+                            placeholder="Keyword esclusa"
+                          />
+
+                          <Input
+                            type="number"
+                            value={autoApplySettings.maxDailyApplications}
+                            onChange={(e) =>
+                              setAutoApplySettings((prev) => ({
+                                ...prev,
+                                maxDailyApplications: e.target.value,
+                              }))
+                            }
+                            placeholder="Massimo candidature giornaliere"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="actions">
+                        <Button className="btn-dark" onClick={generateAutoApplyQueue}>
+                          <Bot size={16} />
+                          Prepara candidature AI
+                        </Button>
+                        <Button className="btn-red" onClick={executeAutoApply}>
+                          <Play size={16} />
+                          Invia selezionate
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+
+                  <Card className="preview-card">
+                    <h3>Coda Auto Apply</h3>
+                    <div className="stack">
+                      <div className="inner-box">
+                        <div className="section-label">Sintesi</div>
+                        <p className="meta-text small">
+                          Modalità:{" "}
+                          {autoApplySettings.mode === "review"
+                            ? "assistita"
+                            : autoApplySettings.mode === "semi"
+                            ? "semi-automatica"
+                            : "automatica"}
+                          {" • "}
+                          Match minimo: {autoApplySettings.minMatch}% {" • "}
+                          RAL minima: €{Number(autoApplySettings.minRal || 0).toLocaleString("it-IT")}
+                        </p>
+                      </div>
+
+                      {autoApplyQueue.length === 0 ? (
+                        <div className="inner-box">
+                          <div className="section-label">Nessuna coda pronta</div>
+                          <p className="meta-text small">
+                            Imposta i filtri e premi “Prepara candidature AI”.
+                          </p>
+                        </div>
+                      ) : (
+                        autoApplyQueue.map((item) => (
+                          <div key={item.queueId} className="inner-box">
+                            <div className="section-head" style={{ marginBottom: 8 }}>
+                              <div>
+                                <div className="offer-title">{item.title}</div>
+                                <div className="meta-text small">
+                                  {item.company} • {item.comune}
+                                  {item.zone ? `, ${item.zone}` : ""}
+                                </div>
+                              </div>
+                              <Badge className={item.status === "Inviata" ? "badge-red" : ""}>{item.status}</Badge>
+                            </div>
+
+                            <div className="chips">
+                              <Badge>Match {item.match}%</Badge>
+                              <Badge>{item.contract}</Badge>
+                              <Badge>{item.salary}</Badge>
+                              <Badge>{item.remote}</Badge>
+                            </div>
+
+                            <p className="meta-text small" style={{ marginTop: 10 }}>
+                              {item.reason}
+                            </p>
+
+                            <div className="actions">
+                              <Button className="btn-dark" onClick={() => toggleQueueSelection(item.queueId)}>
+                                {item.selected ? "Deseleziona" : "Seleziona"}
+                              </Button>
+                              <Button className="btn-dark" onClick={() => setCvSection("match")}>
+                                <Wand2 size={16} />
+                                Adatta CV
+                              </Button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </Card>
+                </div>
+              )}
             </>
           )}
 
@@ -2258,7 +2764,7 @@ export default function App() {
                   <div className="inner-box">
                     <div className="section-label">Suggerimento rapido</div>
                     <p className="meta-text small">
-                      Ora la ricerca è strutturata meglio: regione, provincia, comune e zona. Per Milano usa il filtro zona per risultati più utili.
+                      Per Auto Apply AI imposta prima filtri duri: match minimo, RAL minima, contratto e distanza.
                     </p>
                   </div>
                 </div>
@@ -2279,7 +2785,7 @@ export default function App() {
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && sendChat()}
-                    placeholder="Scrivi: cercami offerte a Milano zona Barona"
+                    placeholder="Scrivi: aiutami con Auto Apply AI"
                   />
                   <Button className="btn-red" onClick={sendChat}>
                     <Send size={16} />
