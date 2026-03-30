@@ -565,6 +565,14 @@ body,
   box-shadow: 0 0 0 3px rgba(239,68,68,0.12);
 }
 
+/* ERROR FIELDS */
+.error-field,
+.theme-dark .error-field,
+.theme-light .error-field {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12) !important;
+}
+
 /* FIX INPUT NUMERICI */
 input[type="number"] {
   -moz-appearance: textfield;
@@ -577,7 +585,6 @@ input[type="number"]::-webkit-inner-spin-button {
   margin: 0;
 }
 
-/* supporto anche ai numeric input custom */
 input[inputmode="numeric"] {
   -moz-appearance: textfield;
   appearance: textfield;
@@ -601,6 +608,13 @@ input[inputmode="numeric"]::-webkit-inner-spin-button {
   background: linear-gradient(180deg, rgba(255,255,255,1), rgba(248,250,252,0.98));
   border: 1px solid rgba(15,23,42,0.12);
   color: #111827;
+}
+
+/* CHECKBOX */
+input[type="checkbox"] {
+  accent-color: #ef4444;
+  width: 16px;
+  height: 16px;
 }
 
 /* BUTTONS */
@@ -1017,6 +1031,42 @@ input[inputmode="numeric"]::-webkit-inner-spin-button {
   color: inherit;
 }
 
+/* TOAST */
+.jobly-toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  min-width: 260px;
+  max-width: 420px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255,255,255,0.12);
+  animation: toastSlide 0.25s ease;
+}
+
+.jobly-toast.success {
+  background: linear-gradient(135deg, #166534, #15803d);
+}
+
+.jobly-toast.error {
+  background: linear-gradient(135deg, #b91c1c, #dc2626);
+}
+
+@keyframes toastSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateX(0);
+  }
+}
+
 /* FOOTER */
 .footer {
   text-align: center;
@@ -1136,6 +1186,13 @@ input[inputmode="numeric"]::-webkit-inner-spin-button {
 
   .auth-left h1 {
     font-size: 2.4rem;
+  }
+
+  .jobly-toast {
+    right: 16px;
+    left: 16px;
+    max-width: unset;
+    min-width: unset;
   }
 }
 
