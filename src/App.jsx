@@ -237,12 +237,12 @@ const locationData = {
 };
 
 const defaultProfile = {
-  name: "Christian D.",
-  role: "Back Office / Order Management / Customer Support",
-  city: "Milano",
-  bio: "Profilo operativo con esperienza in customer support, gestione ordini e strumenti gestionali. Cerco ruoli stabili con crescita.",
-  skills: "SAP, Back Office, Customer Care, Excel, Ticketing, Gestione ordini",
-  cvName: "CV_Christian.pdf",
+  name: "",
+  role: "",
+  city: "",
+  bio: "",
+  skills: "",
+  cvName: "",
 };
 
 const defaultApplications = [
