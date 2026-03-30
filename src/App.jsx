@@ -33,7 +33,49 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { supabase } from "./supabaseClient";
+// 🔐 Supabase Auth Session Sync
+const useSupabaseSession = (setAuthSession) => {
+  useEffect(() => {
+    const getSession = async () => {
+      const { data } = await supabase.auth.getSession();
 
+      if (data.session) {
+        setAuthSession({
+          isAuthenticated: true,
+          email: data.session.user.email,
+          name: data.session.user.email,
+          isDemo: false,
+        });
+      }
+    };
+
+    getSession();
+
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (session) {
+          setAuthSession({
+            isAuthenticated: true,
+            email: session.user.email,
+            name: session.user.email,
+            isDemo: false,
+          });
+        } else {
+          setAuthSession({
+            isAuthenticated: false,
+            email: "",
+            name: "",
+            isDemo: false,
+          });
+        }
+      }
+    );
+
+    return () => {
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+};
 const STORAGE_KEYS = {
   theme: "jobly_theme",
   activeTab: "jobly_active_tab",
@@ -677,6 +719,7 @@ export default function App() {
   const [notifications, setNotifications] = useState(() => readStorage(STORAGE_KEYS.notifications, defaultNotifications));
   const [authUsers, setAuthUsers] = useState(() => readStorage(STORAGE_KEYS.authUsers, []));
   const [authSession, setAuthSession] = useState(() => readStorage(STORAGE_KEYS.authSession, defaultAuthSession));
+  useSupabaseSession(setAuthSession);
   const [chat, setChat] = useState(() => readStorage(STORAGE_KEYS.chat, defaultChat));
   const [cvData, setCvData] = useState(() => readStorage(STORAGE_KEYS.cvData, defaultCvData));
   const [savedCVs, setSavedCVs] = useState(() => readStorage(STORAGE_KEYS.savedCVs, defaultSavedCVs));
@@ -1161,38 +1204,29 @@ export default function App() {
     }));
   };
 
-  const handleLogin = () => {
-    setAuthError("");
-    setAuthSuccess("");
-    const email = authForm.email.trim().toLowerCase();
-    const password = authForm.password.trim();
+ const handleLogin = async () => {
+  setAuthError("");
+  setAuthSuccess("");
 
-    if (!email || !password) {
-      setAuthError("Inserisci email e password.");
-      return;
-    }
+  const email = authForm.email.trim();
+  const password = authForm.password.trim();
 
-    const user = authUsers.find((u) => u.email === email);
-    if (!user) {
-      setAuthError("Nessun account trovato con questa email.");
-      return;
-    }
+  if (!email || !password) {
+    setAuthError("Inserisci email e password.");
+    return;
+  }
 
-    if (user.password !== password) {
-      setAuthError("Password non corretta.");
-      return;
-    }
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
 
-    setAuthSession({
-      isAuthenticated: true,
-      email: user.email,
-      name: user.name,
-      isDemo: false,
-    });
-    syncUserIntoProfile(user);
-    setAuthForm({ name: "", email: "", password: "", confirmPassword: "" });
-    setAuthSuccess("Accesso effettuato.");
-  };
+  if (error) {
+    setAuthError(error.message);
+  } else {
+    setAuthSuccess("Accesso effettuato");
+  }
+};
 
   const handleRegister = () => {
     setAuthError("");
