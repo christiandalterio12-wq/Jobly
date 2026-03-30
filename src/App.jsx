@@ -1635,7 +1635,57 @@ const addJob = async () => {
             </button>
           </div>
         </div>
+{showAddJobForm && (
+  <div className="inner-box" style={{ marginBottom: 20 }}>
+    <h3>Aggiungi nuova offerta</h3>
 
+    <input
+      type="text"
+      placeholder="Titolo"
+      value={newJob.title}
+      onChange={(e) => setNewJob({ ...newJob, title: e.target.value })}
+      style={{ display: "block", marginBottom: 10, width: "100%" }}
+    />
+
+    <input
+      type="text"
+      placeholder="Azienda"
+      value={newJob.company}
+      onChange={(e) => setNewJob({ ...newJob, company: e.target.value })}
+      style={{ display: "block", marginBottom: 10, width: "100%" }}
+    />
+
+    <input
+      type="text"
+      placeholder="Comune"
+      value={newJob.comune}
+      onChange={(e) => setNewJob({ ...newJob, comune: e.target.value })}
+      style={{ display: "block", marginBottom: 10, width: "100%" }}
+    />
+
+    <input
+      type="text"
+      placeholder="Stipendio"
+      value={newJob.salary}
+      onChange={(e) => setNewJob({ ...newJob, salary: e.target.value })}
+      style={{ display: "block", marginBottom: 10, width: "100%" }}
+    />
+
+    <button
+      onClick={handleAddJob}
+      style={{
+        background: "#22c55e",
+        color: "white",
+        padding: "10px 16px",
+        borderRadius: "8px",
+        border: "none",
+        cursor: "pointer"
+      }}
+    >
+      Salva offerta
+    </button>
+  </div>
+)}
         {saveFeedback ? (
           <div style={{ padding: "0 28px 10px" }}>
             <div className="inner-box">
