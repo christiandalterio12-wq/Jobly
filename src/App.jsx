@@ -106,6 +106,10 @@ autoApplyQueue: "jobly_auto_apply_queue",
   autoApplySettings: "jobly_auto_apply_settings",
   autoApplyQueue: "jobly_auto_apply_queue",
 };
+const getUserKey = (key, email) => {
+  if (!email) return key;
+  return `${key}_${email}`;
+};
 
 const locationData = {
   Lombardia: {
