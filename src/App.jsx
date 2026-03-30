@@ -598,6 +598,27 @@ function AuthScreen({
                     placeholder="Il tuo nome"
                   />
                 </div>
+      <div>
+  <div className="section-label">Cognome</div>
+  <Input
+    value={authForm.surname}
+    onChange={(e) =>
+      setAuthForm((prev) => ({ ...prev, surname: e.target.value }))
+    }
+    placeholder="Il tuo cognome"
+  />
+</div>
+            
+<div>
+  <div className="section-label">Data di nascita</div>
+  <Input
+    type="date"
+    value={authForm.birthDate}
+    onChange={(e) =>
+      setAuthForm((prev) => ({ ...prev, birthDate: e.target.value }))
+    }
+  />
+</div>
               )}
 
               <div>
