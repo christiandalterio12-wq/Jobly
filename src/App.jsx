@@ -255,45 +255,7 @@ const defaultApplications = [
     date: "Oggi",
   },
 ];
-const defaultRecruiterMessages = [
-  {
-    id: 1,
-    company: "Randstad",
-    jobTitle: "Customer Care Specialist",
-    applicationId: 101,
-    unread: true,
-    messages: [
-      {
-        id: 1,
-        sender: "company",
-        text: "Buongiorno, abbiamo visionato il suo profilo. Sarebbe disponibile per un primo colloquio telefonico?",
-        time: "Oggi • 10:12",
-      },
-    ],
-  },
-  {
-    id: 2,
-    company: "DHL",
-    jobTitle: "Order Management Specialist",
-    applicationId: null,
-    unread: false,
-    messages: [
-      {
-        id: 1,
-        sender: "company",
-        text: "Il suo profilo sembra interessante per future selezioni. Possiamo aggiornarla nelle prossime settimane.",
-        time: "Ieri • 16:40",
-      },
-      {
-        id: 2,
-        sender: "user",
-        text: "Grazie, resto disponibile per eventuali approfondimenti.",
-        time: "Ieri • 18:05",
-      },
-    ],
-  },
-];
-
+const defaultRecruiterMessages = [];
 const defaultNotifications = [];
 
 const defaultCvData = {
