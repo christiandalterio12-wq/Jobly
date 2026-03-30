@@ -1231,11 +1231,14 @@ const [authForm, setAuthForm] = useState({
   };
 
   const syncUserIntoProfile = (user) => {
-    setProfile((prev) => ({
-      ...prev,
-      name: user.name || prev.name,
-    }));
-  };
+  setProfile((prev) => ({
+    ...prev,
+    name: user.name || prev.name,
+    surname: user.surname || prev.surname,
+    birthDate: user.birthDate || prev.birthDate,
+    email: user.email || prev.email,
+  }));
+};
 
 const handleLogin = async () => {
   setAuthError("");
