@@ -312,38 +312,19 @@ const defaultSavedCVs = [
 ];
 
 const defaultCvData = {
-  nome: "Christian",
-  cognome: "D.",
+  nome: "",
+  cognome: "",
   email: "",
   telefono: "",
-  citta: "Milano",
-  ruolo: "Back Office / Order Management",
-  profilo:
-    "Professionista operativo con esperienza in customer support, gestione ordini e utilizzo di strumenti gestionali. Orientato alla precisione, alla continuità operativa e alla qualità del servizio.",
-  competenze: ["SAP", "Excel", "Back Office", "Customer Care", "Ticketing"],
+  citta: "",
+  ruolo: "",
+  profilo: "",
+  competenze: [],
   newSkill: "",
-  esperienze: [
-    {
-      id: 1,
-      ruolo: "Back Office / Supporto Clienti",
-      azienda: "Azienda attuale",
-      periodo: "2024 - Oggi",
-      descrizione:
-        "Gestione richieste clienti, aggiornamento dati su gestionale, supporto operativo e monitoraggio pratiche.",
-    },
-  ],
-  formazione: [
-    {
-      id: 1,
-      titolo: "",
-      istituto: "",
-      periodo: "",
-      descrizione: "",
-    },
-  ],
+  esperienze: [],
+  formazione: [],
   jobDescription: "",
-  coverLetter:
-    "Gentile Recruiter, desidero sottoporre la mia candidatura per il ruolo indicato. Ho maturato esperienza in attività operative, customer support e gestione ordini, con attenzione alla precisione e alla continuità del servizio.",
+  coverLetter: "",
 };
 
 const defaultAutoApplySettings = {
