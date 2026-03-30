@@ -1474,6 +1474,7 @@ const addJob = async () => {
     alert("Errore inserimento")
   } else {
     alert("Offerta aggiunta")
+    setOffers(prev => [...prev, newJob])
     setNewJob({
       title: "",
       company: "",
