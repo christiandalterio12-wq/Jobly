@@ -1672,7 +1672,7 @@ const addJob = async () => {
     />
 
     <button
-      onClick={handleAddJob}
+      onClick={addJob}
       style={{
         background: "#22c55e",
         color: "white",
