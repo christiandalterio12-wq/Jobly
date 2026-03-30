@@ -753,7 +753,7 @@ export default function App() {
 
   const [profile, setProfile] = useState(() =>
   readStorage(
-    getUserKey(STORAGE_KEYS.profile, defaultAuthSession.email),
+    getUserKey(STORAGE_KEYS.profile, defaultAuthSession?.email || ""),
     defaultProfile
   )
 );
@@ -765,6 +765,16 @@ export default function App() {
   const [notifications, setNotifications] = useState(() => readStorage(STORAGE_KEYS.notifications, defaultNotifications));
   const [authSession, setAuthSession] = useState(() => readStorage(STORAGE_KEYS.authSession, defaultAuthSession));
   useSupabaseSession(setAuthSession);
+  useEffect(() => {
+  if (!authSession?.email) return;
+
+  const userProfile = readStorage(
+    getUserKey(STORAGE_KEYS.profile, authSession.email),
+    defaultProfile
+  );
+
+  setProfile(userProfile);
+}, [authSession]);
   const [chat, setChat] = useState(() => readStorage(STORAGE_KEYS.chat, defaultChat));
  const [cvData, setCvData] = useState(() =>
   readStorage(
