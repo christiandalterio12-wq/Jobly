@@ -1277,10 +1277,12 @@ if (profileError) {
     isDemo: false,
   });
 
-  syncUserIntoProfile({
-    name: data.user?.user_metadata?.name || email,
-    email: data.user?.email || email,
-  });
+ syncUserIntoProfile({
+  name: data.user?.user_metadata?.name || email,
+  surname: data.user?.user_metadata?.surname || "",
+  birthDate: data.user?.user_metadata?.birthDate || "",
+  email: data.user?.email || email,
+})
 
   setAuthForm({
   name: "",
