@@ -366,6 +366,9 @@ const defaultAuthSession = {
   isAuthenticated: false,
   email: "",
   name: "",
+  surname: "",
+  birthDate: "",
+  role: "user",
   isDemo: false,
 };
 
