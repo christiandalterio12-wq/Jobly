@@ -3178,27 +3178,26 @@ const handleLogout = async () => {
         </main>
       </div>
 
-      {toast ? (
-        <div
-          style={{
-            position: "fixed",
-            top: 20,
-            right: 20,
-            zIndex: 9999,
-            minWidth: 260,
-            maxWidth: 420,
-            padding: "14px 16px",
-            borderRadius: 12,
-            color: "#fff",
-            background: toast.type === "error" ? "#b91c1c" : "#166534",
-            boxShadow: "0 12px 30px rgba(0,0,0,0.28)",
-            border: "1px solid rgba(255,255,255,0.12)",
-            fontWeight: 600,
-          }}
-        >
-          {toast.message}
-        </div>
-      ) : null}
-    </div>
-  );
+  {toast && (
+  <div
+    style={{
+      position: "fixed",
+      top: 20,
+      right: 20,
+      zIndex: 9999,
+      minWidth: 260,
+      maxWidth: 420,
+      padding: "14px 16px",
+      borderRadius: 12,
+      color: "#fff",
+      background: toast.type === "error" ? "#b91c1c" : "#166534",
+      boxShadow: "0 12px 30px rgba(0,0,0,0.28)",
+      border: "1px solid rgba(255,255,255,0.12)",
+      fontWeight: 600,
+    }}
+  >
+    {toast.message}
+  </div>
+)}
+    );
 }
