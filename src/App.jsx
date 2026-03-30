@@ -1311,7 +1311,6 @@ const handleLogout = async () => {
 
   setAuthMode("login");
 };
-  };
 
   const openCVSection = (section) => {
     setTab("cv");
