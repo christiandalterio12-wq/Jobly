@@ -838,8 +838,10 @@ const [authForm, setAuthForm] = useState({
   }, [cvSection]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.profile, JSON.stringify(profile));
-  }, [profile]);
+    localStorage.setItem(
+  getUserKey(STORAGE_KEYS.profile, authSession.email),
+  JSON.stringify(profile)
+);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.savedIds, JSON.stringify(savedIds));
