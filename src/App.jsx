@@ -235,6 +235,7 @@ const defaultProfile = {
 const defaultApplications = [];
 const defaultRecruiterMessages = [];
 const defaultNotifications = [];
+const defaultSavedCVs = [];
 
 const defaultCvData = {
   nome: "",
