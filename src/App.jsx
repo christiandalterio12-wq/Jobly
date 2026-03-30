@@ -1228,48 +1228,73 @@ export default function App() {
   }
 };
 
-  const handleRegister = () => {
-    setAuthError("");
-    setAuthSuccess("");
+ const handleRegister = async () => {
+  setAuthError("");
+  setAuthSuccess("");
 
-    const name = authForm.name.trim();
-    const email = authForm.email.trim().toLowerCase();
-    const password = authForm.password.trim();
-    const confirmPassword = authForm.confirmPassword.trim();
+  const name = authForm.name.trim();
+  const email = authForm.email.trim().toLowerCase();
+  const password = authForm.password.trim();
+  const confirmPassword = authForm.confirmPassword.trim();
 
-    if (!name || !email || !password || !confirmPassword) {
-      setAuthError("Compila tutti i campi.");
-      return;
-    }
-    if (!email.includes("@") || !email.includes(".")) {
-      setAuthError("Inserisci una email valida.");
-      return;
-    }
-    if (password.length < 6) {
-      setAuthError("La password deve avere almeno 6 caratteri.");
-      return;
-    }
-    if (password !== confirmPassword) {
-      setAuthError("Le password non coincidono.");
-      return;
-    }
-    if (authUsers.some((u) => u.email === email)) {
-      setAuthError("Esiste già un account con questa email.");
-      return;
-    }
+  if (!name || !email || !password || !confirmPassword) {
+    setAuthError("Compila tutti i campi.");
+    return;
+  }
 
-    const newUser = { id: Date.now(), name, email, password };
-    setAuthUsers((prev) => [...prev, newUser]);
+  if (!email.includes("@") || !email.includes(".")) {
+    setAuthError("Inserisci una email valida.");
+    return;
+  }
+
+  if (password.length < 6) {
+    setAuthError("La password deve avere almeno 6 caratteri.");
+    return;
+  }
+
+  if (password !== confirmPassword) {
+    setAuthError("Le password non coincidono.");
+    return;
+  }
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        name,
+      },
+    },
+  });
+
+  if (error) {
+    setAuthError(error.message);
+    return;
+  }
+
+  setAuthSuccess("Account creato con successo. Controlla anche la tua email di conferma se richiesta.");
+
+  if (data?.session) {
     setAuthSession({
       isAuthenticated: true,
-      email,
-      name,
+      email: data.user?.email || email,
+      name: data.user?.user_metadata?.name || name,
       isDemo: false,
     });
-    syncUserIntoProfile(newUser);
-    setAuthForm({ name: "", email: "", password: "", confirmPassword: "" });
-    setAuthSuccess("Account creato con successo.");
-  };
+
+    syncUserIntoProfile({
+      name: data.user?.user_metadata?.name || name,
+      email: data.user?.email || email,
+    });
+  }
+
+  setAuthForm({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+};
 
   const handleForgotPassword = () => {
     setAuthError("");
