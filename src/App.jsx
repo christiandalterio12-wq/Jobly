@@ -699,10 +699,9 @@ export default function App() {
   setProfile(userProfile);
 }, [authSession]);
   useEffect(() => {
-  if (!authSession?.email) return;
 
   const userCvData = readStorage(
-    getUserKey(STORAGE_KEYS.cvData, authSession.email),
+    getUserKey(STORAGE_KEYS.cvData, authSession?.email || "")
     defaultCvData
   );
 
