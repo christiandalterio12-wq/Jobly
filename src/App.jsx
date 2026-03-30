@@ -302,14 +302,6 @@ const defaultRecruiterMessages = [
 ];
 
 const defaultNotifications = [];
-  {
-    id: 1,
-    name: "CV_Christian.pdf",
-    role: "Back Office / Order Management",
-    updated: "Oggi",
-    status: "Completo",
-  },
-];
 
 const defaultCvData = {
   nome: "",
