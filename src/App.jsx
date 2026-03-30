@@ -1323,15 +1323,17 @@ if (profileError) {
     return;
   }
 
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        name,
-      },
+ const { data, error } = await supabase.auth.signUp({
+  email,
+  password,
+  options: {
+    data: {
+      name: authForm.name,
+      surname: authForm.surname,
+      birthDate: authForm.birthDate,
     },
-  });
+  },
+});
 
   if (error) {
     setAuthError(error.message);
