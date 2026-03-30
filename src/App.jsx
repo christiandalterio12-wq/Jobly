@@ -1226,14 +1226,25 @@ const handleLogin = async () => {
   }
 
   const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+  email,
+  password,
+});
 
-  if (error) {
-    setAuthError(error.message);
-    return;
-  }
+if (error) {
+  setAuthError(error.message);
+  return;
+}
+
+const { data: profile, error: profileError } = await supabase
+  .from("profiles")
+  .select("*")
+  .eq("id", data.user.id)
+  .single();
+
+if (profileError) {
+  setAuthError("Login riuscito ma profilo non trovato.");
+  return;
+}
 
   setAuthSession({
     isAuthenticated: true,
