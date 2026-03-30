@@ -39,7 +39,6 @@ const STORAGE_KEYS = {
   activeTab: "jobly_active_tab",
   activeCvSection: "jobly_active_cv_section",
   profile: "jobly_profile",
-  offers: "jobly_offers",
   savedIds: "jobly_saved_ids",
   applications: "jobly_applications",
   notifications: "jobly_notifications",
@@ -191,7 +190,7 @@ const defaultProfile = {
 const defaultApplications = [
   {
     id: 101,
-    offerId: 2,
+    offerId: "seed-2",
     title: "Customer Care Specialist",
     company: "Randstad",
     status: "Inviata",
@@ -610,7 +609,7 @@ export default function App() {
   const [offers, setOffers] = useState([]);
   const [offersLoading, setOffersLoading] = useState(true);
   const [offersError, setOffersError] = useState("");
-  const [savedIds, setSavedIds] = useState(() => readStorage(STORAGE_KEYS.savedIds, [1]));
+  const [savedIds, setSavedIds] = useState(() => readStorage(STORAGE_KEYS.savedIds, []));
   const [applications, setApplications] = useState(() => readStorage(STORAGE_KEYS.applications, defaultApplications));
   const [notifications, setNotifications] = useState(() => readStorage(STORAGE_KEYS.notifications, defaultNotifications));
   const [authUsers, setAuthUsers] = useState(() => readStorage(STORAGE_KEYS.authUsers, []));
@@ -719,50 +718,24 @@ export default function App() {
   }, [autoApplyQueue]);
 
   useEffect(() => {
-    const fetchOffers = async () => {
+    const fetchJobs = async () => {
       setOffersLoading(true);
       setOffersError("");
 
-      const { data, error } = await supabase
-        .from("jobs")
-        .select("*")
-        .eq("status", "active")
-        .order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("jobs").select("*");
 
       if (error) {
-        console.error("Errore caricamento offerte:", error);
-        setOffersError("Impossibile caricare le offerte.");
+        console.error("Errore Supabase:", error);
+        setOffersError("Errore nel caricamento offerte");
         setOffers([]);
-        setOffersLoading(false);
-        return;
+      } else {
+        setOffers(data || []);
       }
 
-      const mappedOffers = (data || []).map((job) => ({
-        id: job.id,
-        title: job.title || "Titolo non disponibile",
-        company: job.company || "Azienda non disponibile",
-        region: "Lombardia",
-        province: "Milano",
-        comune: job.location || "Milano",
-        zone: "",
-        distance: 10,
-        contract: job.contract || "Contratto non disponibile",
-        salary: job.salary || "N/D",
-        remote: "On-site",
-        category: "Generale",
-        match: 80,
-        urgent: false,
-        applyUrl: job.apply_url || "",
-        external: job.external ?? true,
-        description: job.description || "",
-        status: job.status || "active",
-      }));
-
-      setOffers(mappedOffers);
       setOffersLoading(false);
     };
 
-    fetchOffers();
+    fetchJobs();
   }, []);
 
   useEffect(() => {
@@ -823,8 +796,27 @@ export default function App() {
     return ["all", ...zones];
   }, [autoApplySettings.region, autoApplySettings.province, autoApplySettings.comune]);
 
+  const normalizedOffers = useMemo(() => {
+    return offers.map((o, index) => ({
+      id: o.id || `job-${index}`,
+      title: o.title || "Titolo non disponibile",
+      company: o.company || "Azienda non disponibile",
+      region: o.region || "Lombardia",
+      province: o.province || "Milano",
+      comune: o.comune || "Milano",
+      zone: o.zone || "",
+      distance: typeof o.distance === "number" ? o.distance : Number(o.distance || 0),
+      contract: o.contract || "N/D",
+      salary: o.salary || "N/D",
+      remote: o.remote || "On-site",
+      category: o.category || "Generale",
+      match: typeof o.match === "number" ? o.match : Number(o.match || 0),
+      urgent: Boolean(o.urgent),
+    }));
+  }, [offers]);
+
   const filteredOffers = useMemo(() => {
-    return offers.filter((o) => {
+    return normalizedOffers.filter((o) => {
       const okSearch =
         !search ||
         [o.title, o.company, o.region, o.province, o.comune, o.zone, o.category]
@@ -841,7 +833,7 @@ export default function App() {
 
       return okSearch && okRegion && okProvince && okComune && okZone && okContract && okDistance;
     });
-  }, [offers, search, region, province, comune, zone, contract, maxDistance]);
+  }, [normalizedOffers, search, region, province, comune, zone, contract, maxDistance]);
 
   const profileCompletion = useMemo(() => {
     let score = 0;
@@ -1328,7 +1320,7 @@ export default function App() {
     const requiredKeyword = autoApplySettings.requiredKeyword.trim().toLowerCase();
     const excludedKeyword = autoApplySettings.excludedKeyword.trim().toLowerCase();
 
-    return offers
+    return normalizedOffers
       .filter((offer) => {
         const offerText = [
           offer.title,
@@ -1398,7 +1390,7 @@ export default function App() {
         status: "Pronta",
         reason: `Compatibile con regole Auto Apply AI: match ${offer.match}%, contratto ${offer.contract}, distanza ${offer.distance} km.`,
       }));
-  }, [offers, autoApplySettings, applications]);
+  }, [normalizedOffers, autoApplySettings, applications]);
 
   const generateAutoApplyQueue = () => {
     setAutoApplyQueue(preparedAutoApplyOffers);
@@ -1425,7 +1417,7 @@ export default function App() {
     const limited = selected.slice(0, Number(autoApplySettings.maxDailyApplications || 5));
 
     limited.forEach((item) => {
-      const offer = offers.find((o) => o.id === item.offerId);
+      const offer = normalizedOffers.find((o) => o.id === item.offerId);
       if (offer) applyToOffer(offer);
     });
 
@@ -1630,7 +1622,7 @@ export default function App() {
                   <h2>Offerte consigliate</h2>
                   <p>Ricerca nazionale con filtro per regione, provincia, comune e zona</p>
                 </div>
-                <div className="muted">{filteredOffers.length} risultati</div>
+                <div className="muted">{offersLoading ? "..." : filteredOffers.length} risultati</div>
               </div>
 
               {offersLoading ? (
