@@ -842,6 +842,7 @@ const [authForm, setAuthForm] = useState({
   getUserKey(STORAGE_KEYS.profile, authSession.email),
   JSON.stringify(profile)
 );
+    }, [profile, authSession]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.savedIds, JSON.stringify(savedIds));
@@ -858,13 +859,14 @@ const [authForm, setAuthForm] = useState({
     localStorage.setItem(STORAGE_KEYS.authSession, JSON.stringify(authSession));
   }, [authSession]);
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.chat, JSON.stringify(chat));
-  }, [chat]);
+ useEffect(() => {
+  if (!authSession?.email) return;
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.cvData, JSON.stringify(cvData));
-  }, [cvData]);
+  localStorage.setItem(
+    getUserKey(STORAGE_KEYS.cvData, authSession.email),
+    JSON.stringify(cvData)
+  );
+}, [cvData, authSession]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.savedCVs, JSON.stringify(savedCVs));
