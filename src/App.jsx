@@ -1556,7 +1556,6 @@ export default function App() {
 if (error) {
   console.error("Errore Supabase completo:", error);
 alert(`Errore inserimento: ${error.message}`);
-}
     } else {
       alert("Offerta aggiunta");
       setOffers((prev) => [data, ...prev]);
