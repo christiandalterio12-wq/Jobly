@@ -1624,7 +1624,48 @@ export default function App() {
                 </div>
                 <div className="muted">{offersLoading ? "..." : filteredOffers.length} risultati</div>
               </div>
+<div style={{ marginBottom: 20 }}>
+  <button
+    onClick={() => setShowAddJobForm((prev) => !prev)}
+    style={{
+      background: "#ff6b3d",
+      color: "white",
+      padding: "10px 16px",
+      borderRadius: "8px",
+      border: "none",
+      cursor: "pointer"
+    }}
+  >
+    {showAddJobForm ? "Chiudi form" : "+ Aggiungi offerta"}
+  </button>
+</div>
 
+{showAddJobForm && (
+  <div style={{ marginBottom: 20 }}>
+    <input
+      placeholder="Titolo"
+      value={newJob.title}
+      onChange={(e) => setNewJob({ ...newJob, title: e.target.value })}
+    />
+    <input
+      placeholder="Azienda"
+      value={newJob.company}
+      onChange={(e) => setNewJob({ ...newJob, company: e.target.value })}
+    />
+    <input
+      placeholder="Comune"
+      value={newJob.comune}
+      onChange={(e) => setNewJob({ ...newJob, comune: e.target.value })}
+    />
+    <input
+      placeholder="Stipendio"
+      value={newJob.salary}
+      onChange={(e) => setNewJob({ ...newJob, salary: e.target.value })}
+    />
+
+    <button onClick={addJob}>Salva</button>
+  </div>
+)}
               {offersLoading ? (
                 <div className="inner-box">Caricamento offerte...</div>
               ) : offersError ? (
