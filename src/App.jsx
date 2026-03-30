@@ -729,7 +729,6 @@ export default function App() {
   const [savedIds, setSavedIds] = useState(() => readStorage(STORAGE_KEYS.savedIds, []));
   const [applications, setApplications] = useState(() => readStorage(STORAGE_KEYS.applications, defaultApplications));
   const [notifications, setNotifications] = useState(() => readStorage(STORAGE_KEYS.notifications, defaultNotifications));
-  const [authUsers, setAuthUsers] = useState(() => readStorage(STORAGE_KEYS.authUsers, []));
   const [authSession, setAuthSession] = useState(() => readStorage(STORAGE_KEYS.authSession, defaultAuthSession));
   useSupabaseSession(setAuthSession);
   const [chat, setChat] = useState(() => readStorage(STORAGE_KEYS.chat, defaultChat));
@@ -812,11 +811,6 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.notifications, JSON.stringify(notifications));
   }, [notifications]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.authUsers, JSON.stringify(authUsers));
-  }, [authUsers]);
-
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.authSession, JSON.stringify(authSession));
   }, [authSession]);
@@ -1337,13 +1331,6 @@ const handleLogin = async () => {
       setAuthError("Inserisci la tua email.");
       return;
     }
-
-    const user = authUsers.find((u) => u.email === email);
-    if (!user) {
-      setAuthError("Nessun account trovato con questa email.");
-      return;
-    }
-
     setAuthSuccess(`Richiesta registrata per ${email}.`);
   };
 
