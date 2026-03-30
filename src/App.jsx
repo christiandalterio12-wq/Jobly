@@ -255,13 +255,6 @@ const defaultApplications = [
     date: "Oggi",
   },
 ];
-
-const defaultNotifications = [
-  { id: 1, text: "Nuova offerta compatibile al 96% pubblicata da DHL.", read: false },
-  { id: 2, text: "Un recruiter ha visualizzato il tuo profilo.", read: false },
-  { id: 3, text: "La tua candidatura per Customer Care Specialist è in valutazione.", read: true },
-];
-
 const defaultRecruiterMessages = [
   {
     id: 1,
