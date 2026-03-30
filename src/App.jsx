@@ -701,7 +701,7 @@ export default function App() {
   useEffect(() => {
 
   const userCvData = readStorage(
-    getUserKey(STORAGE_KEYS.cvData, authSession?.email || "")
+    getUserKey(STORAGE_KEYS.cvData, authSession?.email || ""),
     defaultCvData
   );
 
