@@ -619,8 +619,6 @@ function AuthScreen({
     }
   />
 </div>
-              )}
-
               <div>
                 <div className="section-label">Email</div>
                 <Input
