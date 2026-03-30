@@ -1204,11 +1204,11 @@ export default function App() {
     }));
   };
 
- const handleLogin = async () => {
+const handleLogin = async () => {
   setAuthError("");
   setAuthSuccess("");
 
-  const email = authForm.email.trim();
+  const email = authForm.email.trim().toLowerCase();
   const password = authForm.password.trim();
 
   if (!email || !password) {
@@ -1223,9 +1223,29 @@ export default function App() {
 
   if (error) {
     setAuthError(error.message);
-  } else {
-    setAuthSuccess("Accesso effettuato");
+    return;
   }
+
+  setAuthSession({
+    isAuthenticated: true,
+    email: data.user?.email || email,
+    name: data.user?.user_metadata?.name || email,
+    isDemo: false,
+  });
+
+  syncUserIntoProfile({
+    name: data.user?.user_metadata?.name || email,
+    email: data.user?.email || email,
+  });
+
+  setAuthForm({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+
+  setAuthSuccess("Accesso effettuato.");
 };
 
  const handleRegister = async () => {
