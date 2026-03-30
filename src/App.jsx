@@ -590,6 +590,7 @@ function AuthScreen({
 
             <div className="stack">
               {authMode === "register" && (
+      <>
                 <div>
                   <div className="section-label">Nome</div>
                   <Input
@@ -619,6 +620,8 @@ function AuthScreen({
     }
   />
 </div>
+</>
+        )}
               <div>
                 <div className="section-label">Email</div>
                 <Input
