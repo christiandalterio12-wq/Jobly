@@ -322,6 +322,23 @@ const defaultChat = [
   },
 ];
 
+const createEmptyJob = () => ({
+  title: "",
+  company: "",
+  region: "Lombardia",
+  province: "Milano",
+  comune: "Milano",
+  zone: "",
+  contract: "Tempo indeterminato",
+  remote: "On-site",
+  category: "Generale",
+  distance: "0",
+  salary: "",
+  description: "",
+  requirements: "",
+  urgent: false,
+});
+
 function readStorage(key, fallback) {
   try {
     const raw = localStorage.getItem(key);
@@ -367,6 +384,10 @@ function Button({ children, className = "", ...props }) {
   );
 }
 
+function FieldLabel({ children }) {
+  return <div className="section-label" style={{ marginBottom: 8 }}>{children}</div>;
+}
+
 function OfferCard({ offer, saved, onSave, onApply, onGoCV }) {
   return (
     <Card className="offer-card">
@@ -384,9 +405,7 @@ function OfferCard({ offer, saved, onSave, onApply, onGoCV }) {
             </span>
           </div>
           {offer.description ? (
-            <p className="meta-text small" style={{ marginTop: 8 }}>
-              {offer.description}
-            </p>
+            <p style={{ marginTop: 12, opacity: 0.9 }}>{offer.description}</p>
           ) : null}
         </div>
 
@@ -606,6 +625,44 @@ function AuthScreen({
   );
 }
 
+function computeMatchFromCV(job, cvData) {
+  const haystack = [
+    job.title,
+    job.company,
+    job.category,
+    job.description,
+    job.requirements,
+    job.contract,
+    job.remote,
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  let score = 20;
+
+  const skillMatches = (cvData.competenze || []).filter((skill) =>
+    haystack.includes(String(skill).toLowerCase())
+  ).length;
+  score += Math.min(skillMatches * 8, 40);
+
+  const roleMatches = (cvData.ruolo || "")
+    .toLowerCase()
+    .split(/[\/,\-]/)
+    .map((x) => x.trim())
+    .filter(Boolean)
+    .some((chunk) => haystack.includes(chunk));
+  if (roleMatches) score += 20;
+
+  const profileWords = (cvData.profilo || "")
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((x) => x.length > 4);
+  const profileHits = profileWords.filter((word) => haystack.includes(word)).length;
+  score += Math.min(profileHits * 2, 20);
+
+  return Math.max(0, Math.min(99, score));
+}
+
 export default function App() {
   const [theme, setTheme] = useState(() => readStorage(STORAGE_KEYS.theme, "dark"));
   const [tab, setTab] = useState(() => readStorage(STORAGE_KEYS.activeTab, "offerte"));
@@ -631,22 +688,9 @@ export default function App() {
   );
 
   const [showAddJobForm, setShowAddJobForm] = useState(false);
-  const [newJob, setNewJob] = useState({
-    title: "",
-    company: "",
-    region: "Lombardia",
-    province: "Milano",
-    comune: "Milano",
-    zone: "",
-    contract: "Tempo indeterminato",
-    remote: "On-site",
-    salary: "",
-    distance: "0",
-    category: "Generale",
-    urgent: false,
-    description: "",
-    requirements: "",
-  });
+  const [newJob, setNewJob] = useState(createEmptyJob());
+  const [jobErrors, setJobErrors] = useState({});
+  const [toast, setToast] = useState(null);
 
   const [autoApplySettings, setAutoApplySettings] = useState(() =>
     readStorage(STORAGE_KEYS.autoApplySettings, defaultAutoApplySettings)
@@ -677,6 +721,14 @@ export default function App() {
     password: "",
     confirmPassword: "",
   });
+
+  const showToast = (message, type = "success", duration = 3000) => {
+    setToast({ message, type });
+    window.clearTimeout(window.__joblyToastTimer);
+    window.__joblyToastTimer = window.setTimeout(() => {
+      setToast(null);
+    }, duration);
+  };
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.theme, JSON.stringify(theme));
@@ -747,7 +799,7 @@ export default function App() {
       setOffersLoading(true);
       setOffersError("");
 
-      const { data, error } = await supabase.from("jobs").select("*");
+      const { data, error } = await supabase.from("jobs").select("*").order("id", { ascending: false });
 
       if (error) {
         console.error("Errore Supabase:", error);
@@ -777,6 +829,39 @@ export default function App() {
   useEffect(() => {
     setZone("all");
   }, [comune]);
+
+  useEffect(() => {
+    setNewJob((prev) => {
+      const nextProvinceOptions =
+        prev.region && locationData[prev.region] ? Object.keys(locationData[prev.region]) : [];
+      const safeProvince = nextProvinceOptions.includes(prev.province) ? prev.province : nextProvinceOptions[0] || "";
+      const nextComuneOptions =
+        prev.region && safeProvince && locationData[prev.region]?.[safeProvince]
+          ? Object.keys(locationData[prev.region][safeProvince])
+          : [];
+      const safeComune = nextComuneOptions.includes(prev.comune) ? prev.comune : nextComuneOptions[0] || "";
+      const nextZoneOptions =
+        prev.region && safeProvince && safeComune
+          ? locationData[prev.region]?.[safeProvince]?.[safeComune] || []
+          : [];
+      const safeZone = nextZoneOptions.includes(prev.zone) ? prev.zone : "";
+
+      if (
+        safeProvince === prev.province &&
+        safeComune === prev.comune &&
+        safeZone === prev.zone
+      ) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        province: safeProvince,
+        comune: safeComune,
+        zone: safeZone,
+      };
+    });
+  }, [newJob.region]);
 
   const regionOptions = useMemo(() => ["all", ...Object.keys(locationData)], []);
   const provinceOptions = useMemo(() => {
@@ -822,102 +907,40 @@ export default function App() {
   }, [autoApplySettings.region, autoApplySettings.province, autoApplySettings.comune]);
 
   const addJobProvinceOptions = useMemo(() => {
-    return Object.keys(locationData[newJob.region] || {}).map((p) => ({
-      value: p,
-      label: p,
-    }));
+    if (!newJob.region || !locationData[newJob.region]) return [];
+    return Object.keys(locationData[newJob.region]);
   }, [newJob.region]);
 
   const addJobComuneOptions = useMemo(() => {
-    return Object.keys(locationData[newJob.region]?.[newJob.province] || {}).map((c) => ({
-      value: c,
-      label: c,
-    }));
+    if (!newJob.region || !newJob.province) return [];
+    return Object.keys(locationData[newJob.region]?.[newJob.province] || {});
   }, [newJob.region, newJob.province]);
 
   const addJobZoneOptions = useMemo(() => {
-    return (locationData[newJob.region]?.[newJob.province]?.[newJob.comune] || []).map((z) => ({
-      value: z,
-      label: z,
-    }));
+    if (!newJob.region || !newJob.province || !newJob.comune) return [];
+    return locationData[newJob.region]?.[newJob.province]?.[newJob.comune] || [];
   }, [newJob.region, newJob.province, newJob.comune]);
 
-  const computeMatchFromCV = (job, cv) => {
-    const jobText = [
-      job.title,
-      job.company,
-      job.category,
-      job.contract,
-      job.remote,
-      job.description,
-      job.requirements,
-    ]
-      .join(" ")
-      .toLowerCase();
-
-    const profileText = [
-      cv.ruolo,
-      cv.profilo,
-      ...(cv.competenze || []),
-      ...(cv.esperienze || []).flatMap((exp) => [
-        exp.ruolo || "",
-        exp.azienda || "",
-        exp.descrizione || "",
-      ]),
-    ]
-      .join(" ")
-      .toLowerCase();
-
-    let score = 35;
-
-    const titleWords = (job.title || "")
-      .toLowerCase()
-      .split(/\s+/)
-      .filter((w) => w.length > 2);
-
-    const matchedTitleWords = titleWords.filter((word) => profileText.includes(word)).length;
-    score += Math.min(matchedTitleWords * 8, 24);
-
-    const matchedSkills = (cv.competenze || []).filter((skill) =>
-      jobText.includes(String(skill).toLowerCase())
-    ).length;
-    score += Math.min(matchedSkills * 6, 24);
-
-    if ((cv.ruolo || "").toLowerCase() && jobText.includes((cv.ruolo || "").toLowerCase())) {
-      score += 10;
-    }
-
-    if ((job.remote || "") === "Remoto") score += 3;
-    if ((job.remote || "") === "Ibrido") score += 2;
-
-    return Math.max(0, Math.min(99, score));
-  };
-
-  const buildOfferFromDb = (o, index = 0) => ({
-    id: o.id || `job-${index}`,
-    title: o.title || "Titolo non disponibile",
-    company: o.company || "Azienda non disponibile",
-    region: o.region || "Lombardia",
-    province: o.province || "Milano",
-    comune: o.comune || "Milano",
-    zone: o.zone || "",
-    distance: typeof o.distance === "number" ? o.distance : Number(o.distance || 0),
-    contract: o.contract || "N/D",
-    salary: o.salary || "N/D",
-    remote: o.remote || "On-site",
-    category: o.category || "Generale",
-    match:
-      typeof o.match === "number"
-        ? o.match
-        : Number(o.match || computeMatchFromCV(o, cvData)),
-    urgent: Boolean(o.urgent),
-    description: o.description || "",
-    requirements: o.requirements || "",
-  });
-
   const normalizedOffers = useMemo(() => {
-    return offers.map((o, index) => buildOfferFromDb(o, index));
-  }, [offers, cvData]);
+    return offers.map((o, index) => ({
+      id: o.id || `job-${index}`,
+      title: o.title || "Titolo non disponibile",
+      company: o.company || "Azienda non disponibile",
+      region: o.region || "Lombardia",
+      province: o.province || "Milano",
+      comune: o.comune || "Milano",
+      zone: o.zone || "",
+      distance: typeof o.distance === "number" ? o.distance : Number(o.distance || 0),
+      contract: o.contract || "N/D",
+      salary: o.salary || "N/D",
+      remote: o.remote || "On-site",
+      category: o.category || "Generale",
+      match: typeof o.match === "number" ? o.match : Number(o.match || 0),
+      urgent: Boolean(o.urgent),
+      description: o.description || "",
+      requirements: o.requirements || "",
+    }));
+  }, [offers]);
 
   const filteredOffers = useMemo(() => {
     return normalizedOffers.filter((o) => {
@@ -1075,7 +1098,7 @@ export default function App() {
   const handleGoCV = (offer) => {
     setCvData((prev) => ({
       ...prev,
-      jobDescription: `${offer.title} presso ${offer.company}. Regione ${offer.region}, provincia ${offer.province}, comune ${offer.comune}${offer.zone ? `, zona ${offer.zone}` : ""}. Contratto ${offer.contract}. Modalità ${offer.remote}. Descrizione: ${offer.description || ""} Requisiti: ${offer.requirements || ""}`,
+      jobDescription: `${offer.title} presso ${offer.company}. Regione ${offer.region}, provincia ${offer.province}, comune ${offer.comune}${offer.zone ? `, zona ${offer.zone}` : ""}. Contratto ${offer.contract}. Modalità ${offer.remote}. ${offer.description ? `Descrizione: ${offer.description}.` : ""} ${offer.requirements ? `Requisiti: ${offer.requirements}.` : ""}`,
     }));
     setTab("cv");
     setCvSection("match");
@@ -1436,6 +1459,8 @@ export default function App() {
           offer.category,
           offer.contract,
           offer.remote,
+          offer.description,
+          offer.requirements,
         ]
           .join(" ")
           .toLowerCase();
@@ -1536,14 +1561,75 @@ export default function App() {
     pulseSave(`${limited.length} candidature inviate da Auto Apply AI`);
   };
 
+  const updateNewJobField = (field, value) => {
+    setNewJob((prev) => {
+      const next = { ...prev, [field]: value };
+
+      if (field === "region") {
+        const nextProvinces = Object.keys(locationData[value] || {});
+        next.province = nextProvinces[0] || "";
+        const nextComuni = Object.keys(locationData[value]?.[next.province] || {});
+        next.comune = nextComuni[0] || "";
+        next.zone = "";
+      }
+
+      if (field === "province") {
+        const nextComuni = Object.keys(locationData[prev.region]?.[value] || {});
+        next.comune = nextComuni[0] || "";
+        next.zone = "";
+      }
+
+      if (field === "comune") {
+        next.zone = "";
+      }
+
+      return next;
+    });
+
+    setJobErrors((prev) => ({ ...prev, [field]: "" }));
+  };
+
+  const validateJobForm = () => {
+    const errors = {};
+
+    if (!newJob.title.trim()) errors.title = "Titolo obbligatorio";
+    if (!newJob.company.trim()) errors.company = "Azienda obbligatoria";
+    if (!newJob.region.trim()) errors.region = "Regione obbligatoria";
+    if (!newJob.province.trim()) errors.province = "Provincia obbligatoria";
+    if (!newJob.comune.trim()) errors.comune = "Comune obbligatorio";
+    if (!newJob.contract.trim()) errors.contract = "Contratto obbligatorio";
+    if (!newJob.remote.trim()) errors.remote = "Modalità obbligatoria";
+    if (!newJob.category.trim()) errors.category = "Categoria obbligatoria";
+
+    if (newJob.distance === "" || Number.isNaN(Number(newJob.distance)) || Number(newJob.distance) < 0) {
+      errors.distance = "Distanza non valida";
+    }
+
+    setJobErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const addJob = async () => {
-    if (!newJob.title || !newJob.company) {
-      alert("Compila almeno titolo e azienda");
+    if (!validateJobForm()) {
+      showToast("Controlla i campi evidenziati", "error", 3500);
       return;
     }
 
     const jobToInsert = {
       ...newJob,
+      title: newJob.title.trim(),
+      company: newJob.company.trim(),
+      region: newJob.region || "Lombardia",
+      province: newJob.province || "Milano",
+      comune: newJob.comune || "Milano",
+      zone: newJob.zone || "",
+      contract: newJob.contract || "Tempo indeterminato",
+      remote: newJob.remote || "On-site",
+      category: newJob.category || "Generale",
+      salary: newJob.salary.trim() || "N/D",
+      description: newJob.description.trim() || "",
+      requirements: newJob.requirements.trim() || "",
+      urgent: Boolean(newJob.urgent),
       distance: Number(newJob.distance || 0),
       match: computeMatchFromCV(newJob, cvData),
     };
@@ -1553,29 +1639,16 @@ export default function App() {
       .insert([jobToInsert])
       .select()
       .single();
-if (error) {
-  console.error("Errore Supabase completo:", error);
-alert(`Errore inserimento: ${error.message}`);
+
+    if (error) {
+      console.error("Errore Supabase completo:", error);
+      showToast(`Errore inserimento: ${error.message}`, "error", 4500);
     } else {
-      alert("Offerta aggiunta");
       setOffers((prev) => [data, ...prev]);
-      setNewJob({
-        title: "",
-        company: "",
-        region: "Lombardia",
-        province: "Milano",
-        comune: "Milano",
-        zone: "",
-        contract: "Tempo indeterminato",
-        remote: "On-site",
-        salary: "",
-        distance: "0",
-        category: "Generale",
-        urgent: false,
-        description: "",
-        requirements: "",
-      });
+      setNewJob(createEmptyJob());
+      setJobErrors({});
       setShowAddJobForm(false);
+      showToast("Offerta aggiunta", "success", 2500);
     }
   };
 
@@ -1770,184 +1843,207 @@ alert(`Errore inserimento: ${error.message}`);
                   <p>Ricerca nazionale con filtro per regione, provincia, comune e zona</p>
                 </div>
 
-                <div style={{ marginBottom: 20 }}>
-                  <button
-                    type="button"
-                    onClick={() => setShowAddJobForm((prev) => !prev)}
-                    style={{
-                      background: "#ff6b3d",
-                      color: "white",
-                      padding: "10px 16px",
-                      borderRadius: "8px",
-                      border: "none",
-                      cursor: "pointer"
-                    }}
-                  >
+                <div className="actions" style={{ marginTop: 0 }}>
+                  <Button className="btn-red" onClick={() => setShowAddJobForm((prev) => !prev)}>
                     {showAddJobForm ? "Chiudi form" : "+ Aggiungi offerta"}
-                  </button>
+                  </Button>
+                  <div className="muted">{offersLoading ? "..." : filteredOffers.length} risultati</div>
                 </div>
-
-                <div className="muted">{offersLoading ? "..." : filteredOffers.length} risultati</div>
               </div>
 
               {showAddJobForm && (
-                <div className="inner-box" style={{ marginBottom: 20 }}>
-                  <h3>Aggiungi nuova offerta</h3>
+                <Card style={{ marginBottom: 20 }}>
+                  <h3 style={{ marginBottom: 18 }}>Aggiungi nuova offerta</h3>
 
-                  <div className="stack">
-                    <Input
-                      value={newJob.title}
-                      onChange={(e) => setNewJob({ ...newJob, title: e.target.value })}
-                      placeholder="Titolo"
-                    />
-
-                    <Input
-                      value={newJob.company}
-                      onChange={(e) => setNewJob({ ...newJob, company: e.target.value })}
-                      placeholder="Azienda"
-                    />
-
-                    <div className="filters-grid">
-                      <SelectField
-                        value={newJob.region}
-                        onChange={(value) =>
-                          setNewJob({
-                            ...newJob,
-                            region: value,
-                            province: Object.keys(locationData[value] || {})[0] || "",
-                            comune:
-                              Object.keys(
-                                locationData[value]?.[Object.keys(locationData[value] || {})[0]] || {}
-                              )[0] || "",
-                            zone: "",
-                          })
-                        }
-                        options={regionOptions
-                          .filter((r) => r !== "all")
-                          .map((r) => ({ value: r, label: r }))}
-                      />
-
-                      <SelectField
-                        value={newJob.province}
-                        onChange={(value) =>
-                          setNewJob({
-                            ...newJob,
-                            province: value,
-                            comune: Object.keys(locationData[newJob.region]?.[value] || {})[0] || "",
-                            zone: "",
-                          })
-                        }
-                        options={addJobProvinceOptions}
-                      />
-
-                      <SelectField
-                        value={newJob.comune}
-                        onChange={(value) =>
-                          setNewJob({
-                            ...newJob,
-                            comune: value,
-                            zone: "",
-                          })
-                        }
-                        options={addJobComuneOptions}
-                      />
-
-                      <SelectField
-                        value={newJob.zone}
-                        onChange={(value) => setNewJob({ ...newJob, zone: value })}
-                        options={[
-                          { value: "", label: "Nessuna zona" },
-                          ...addJobZoneOptions,
-                        ]}
-                      />
-                    </div>
-
-                    <div className="filters-grid">
-                      <SelectField
-                        value={newJob.contract}
-                        onChange={(value) => setNewJob({ ...newJob, contract: value })}
-                        options={[
-                          { value: "Tempo indeterminato", label: "Tempo indeterminato" },
-                          { value: "Tempo determinato", label: "Tempo determinato" },
-                          { value: "Somministrazione", label: "Somministrazione" },
-                        ]}
-                      />
-
-                      <SelectField
-                        value={newJob.remote}
-                        onChange={(value) => setNewJob({ ...newJob, remote: value })}
-                        options={[
-                          { value: "On-site", label: "On-site" },
-                          { value: "Ibrido", label: "Ibrido" },
-                          { value: "Remoto", label: "Remoto" },
-                        ]}
-                      />
-
-                      <SelectField
-                        value={newJob.category}
-                        onChange={(value) => setNewJob({ ...newJob, category: value })}
-                        options={[
-                          { value: "Generale", label: "Generale" },
-                          { value: "Amministrazione", label: "Amministrazione" },
-                          { value: "Customer Service", label: "Customer Service" },
-                          { value: "Logistica", label: "Logistica" },
-                          { value: "IT", label: "IT" },
-                        ]}
-                      />
-
-                      <Input
-                        value={newJob.distance}
-                        onChange={(e) => setNewJob({ ...newJob, distance: e.target.value })}
-                        placeholder="Distanza km"
-                        type="number"
-                      />
-                    </div>
-
-                    <Input
-                      value={newJob.salary}
-                      onChange={(e) => setNewJob({ ...newJob, salary: e.target.value })}
-                      placeholder="Stipendio es. 28K-32K"
-                    />
-
-                    <Textarea
-                      value={newJob.description}
-                      onChange={(e) => setNewJob({ ...newJob, description: e.target.value })}
-                      placeholder="Descrizione offerta"
-                    />
-
-                    <Textarea
-                      value={newJob.requirements}
-                      onChange={(e) => setNewJob({ ...newJob, requirements: e.target.value })}
-                      placeholder="Requisiti richiesti"
-                    />
-
-                    <div className="actions">
-                      <label className="meta-text small" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <input
-                          type="checkbox"
-                          checked={newJob.urgent}
-                          onChange={(e) => setNewJob({ ...newJob, urgent: e.target.checked })}
+                  <div className="two-col" style={{ alignItems: "start" }}>
+                    <div className="stack">
+                      <div>
+                        <FieldLabel>Titolo *</FieldLabel>
+                        <Input
+                          value={newJob.title}
+                          onChange={(e) => updateNewJobField("title", e.target.value)}
+                          placeholder="Es. Impiegato logistico"
+                          style={jobErrors.title ? { border: "1px solid #ef4444" } : {}}
                         />
-                        Offerta urgente
-                      </label>
+                        {jobErrors.title ? <div className="meta-text small" style={{ color: "#ef4444" }}>{jobErrors.title}</div> : null}
+                      </div>
 
-                      <Badge>
-                        Match stimato: {computeMatchFromCV(newJob, cvData)}%
-                      </Badge>
+                      <div>
+                        <FieldLabel>Azienda *</FieldLabel>
+                        <Input
+                          value={newJob.company}
+                          onChange={(e) => updateNewJobField("company", e.target.value)}
+                          placeholder="Es. Adecco"
+                          style={jobErrors.company ? { border: "1px solid #ef4444" } : {}}
+                        />
+                        {jobErrors.company ? <div className="meta-text small" style={{ color: "#ef4444" }}>{jobErrors.company}</div> : null}
+                      </div>
+
+                      <div className="filters-grid">
+                        <div>
+                          <FieldLabel>Regione *</FieldLabel>
+                          <SelectField
+                            value={newJob.region}
+                            onChange={(value) => updateNewJobField("region", value)}
+                            options={Object.keys(locationData).map((item) => ({ value: item, label: item }))}
+                            className={jobErrors.region ? "error-field" : ""}
+                          />
+                        </div>
+
+                        <div>
+                          <FieldLabel>Provincia *</FieldLabel>
+                          <SelectField
+                            value={newJob.province}
+                            onChange={(value) => updateNewJobField("province", value)}
+                            options={addJobProvinceOptions.map((item) => ({ value: item, label: item }))}
+                            className={jobErrors.province ? "error-field" : ""}
+                          />
+                        </div>
+
+                        <div>
+                          <FieldLabel>Comune *</FieldLabel>
+                          <SelectField
+                            value={newJob.comune}
+                            onChange={(value) => updateNewJobField("comune", value)}
+                            options={addJobComuneOptions.map((item) => ({ value: item, label: item }))}
+                            className={jobErrors.comune ? "error-field" : ""}
+                          />
+                        </div>
+
+                        <div>
+                          <FieldLabel>Zona</FieldLabel>
+                          <SelectField
+                            value={newJob.zone}
+                            onChange={(value) => updateNewJobField("zone", value)}
+                            options={[{ value: "", label: "Nessuna zona" }, ...addJobZoneOptions.map((item) => ({ value: item, label: item }))]}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="filters-grid">
+                        <div>
+                          <FieldLabel>Contratto *</FieldLabel>
+                          <SelectField
+                            value={newJob.contract}
+                            onChange={(value) => updateNewJobField("contract", value)}
+                            options={[
+                              { value: "Tempo indeterminato", label: "Tempo indeterminato" },
+                              { value: "Tempo determinato", label: "Tempo determinato" },
+                              { value: "Somministrazione", label: "Somministrazione" },
+                              { value: "Stage", label: "Stage" },
+                            ]}
+                            className={jobErrors.contract ? "error-field" : ""}
+                          />
+                        </div>
+
+                        <div>
+                          <FieldLabel>Modalità *</FieldLabel>
+                          <SelectField
+                            value={newJob.remote}
+                            onChange={(value) => updateNewJobField("remote", value)}
+                            options={[
+                              { value: "On-site", label: "On-site" },
+                              { value: "Ibrido", label: "Ibrido" },
+                              { value: "Remoto", label: "Remoto" },
+                            ]}
+                            className={jobErrors.remote ? "error-field" : ""}
+                          />
+                        </div>
+
+                        <div>
+                          <FieldLabel>Categoria *</FieldLabel>
+                          <SelectField
+                            value={newJob.category}
+                            onChange={(value) => updateNewJobField("category", value)}
+                            options={[
+                              { value: "Generale", label: "Generale" },
+                              { value: "Amministrazione", label: "Amministrazione" },
+                              { value: "Customer Service", label: "Customer Service" },
+                              { value: "Logistica", label: "Logistica" },
+                              { value: "Acquisti", label: "Acquisti" },
+                              { value: "IT", label: "IT" },
+                              { value: "Vendite", label: "Vendite" },
+                            ]}
+                            className={jobErrors.category ? "error-field" : ""}
+                          />
+                        </div>
+
+                        <div>
+                          <FieldLabel>Distanza km *</FieldLabel>
+                          <Input
+                            type="number"
+                            min="0"
+                            value={newJob.distance}
+                            onChange={(e) => updateNewJobField("distance", e.target.value)}
+                            placeholder="Es. 8"
+                            style={jobErrors.distance ? { border: "1px solid #ef4444" } : {}}
+                          />
+                          {jobErrors.distance ? <div className="meta-text small" style={{ color: "#ef4444" }}>{jobErrors.distance}</div> : null}
+                        </div>
+                      </div>
+
+                      <div>
+                        <FieldLabel>RAL / Stipendio</FieldLabel>
+                        <Input
+                          value={newJob.salary}
+                          onChange={(e) => updateNewJobField("salary", e.target.value)}
+                          placeholder="Es. 28K-32K"
+                        />
+                      </div>
                     </div>
 
-                    <div className="actions">
-                      <Button className="btn-red" onClick={addJob}>
-                        <Save size={16} />
-                        Salva offerta
-                      </Button>
+                    <div className="stack">
+                      <div>
+                        <FieldLabel>Descrizione offerta</FieldLabel>
+                        <Textarea
+                          value={newJob.description}
+                          onChange={(e) => updateNewJobField("description", e.target.value)}
+                          placeholder="Descrivi attività, responsabilità e contesto"
+                        />
+                      </div>
 
-                      <Button className="btn-dark" onClick={() => setShowAddJobForm(false)}>
-                        Chiudi
-                      </Button>
+                      <div>
+                        <FieldLabel>Requisiti</FieldLabel>
+                        <Textarea
+                          value={newJob.requirements}
+                          onChange={(e) => updateNewJobField("requirements", e.target.value)}
+                          placeholder="Es. esperienza, software richiesti, lingua, patentini"
+                        />
+                      </div>
+
+                      <div className="inner-box">
+                        <div className="actions" style={{ justifyContent: "space-between", marginTop: 0 }}>
+                          <label style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <input
+                              type="checkbox"
+                              checked={newJob.urgent}
+                              onChange={(e) => updateNewJobField("urgent", e.target.checked)}
+                            />
+                            Offerta urgente
+                          </label>
+                          <Badge>Match stimato: {computeMatchFromCV(newJob, cvData)}%</Badge>
+                        </div>
+                      </div>
+
+                      <div className="actions">
+                        <Button className="btn-red" onClick={addJob}>
+                          <Save size={16} />
+                          Salva offerta
+                        </Button>
+                        <Button
+                          className="btn-dark"
+                          onClick={() => {
+                            setNewJob(createEmptyJob());
+                            setJobErrors({});
+                            setShowAddJobForm(false);
+                          }}
+                        >
+                          Chiudi
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
+                </Card>
               )}
 
               {offersLoading ? (
@@ -2851,6 +2947,7 @@ alert(`Errore inserimento: ${error.message}`);
                               { value: "all", label: "Tutte le modalità" },
                               { value: "Ibrido", label: "Ibrido" },
                               { value: "On-site", label: "On-site" },
+                              { value: "Remoto", label: "Remoto" },
                             ]}
                           />
 
@@ -2866,6 +2963,7 @@ alert(`Errore inserimento: ${error.message}`);
                               { value: "Logistica", label: "Logistica" },
                               { value: "Acquisti", label: "Acquisti" },
                               { value: "IT", label: "IT" },
+                              { value: "Vendite", label: "Vendite" },
                             ]}
                           />
 
@@ -3039,6 +3137,28 @@ alert(`Errore inserimento: ${error.message}`);
           )}
         </main>
       </div>
+
+      {toast ? (
+        <div
+          style={{
+            position: "fixed",
+            top: 20,
+            right: 20,
+            zIndex: 9999,
+            minWidth: 260,
+            maxWidth: 420,
+            padding: "14px 16px",
+            borderRadius: 12,
+            color: "#fff",
+            background: toast.type === "error" ? "#b91c1c" : "#166534",
+            boxShadow: "0 12px 30px rgba(0,0,0,0.28)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            fontWeight: 600,
+          }}
+        >
+          {toast.message}
+        </div>
+      ) : null}
     </div>
   );
 }
