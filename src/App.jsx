@@ -1261,11 +1261,13 @@ if (profileError) {
   });
 
   setAuthForm({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  });
+  name: "",
+  surname: "",
+  birthDate: "",
+  email: "",
+  password: "",
+  confirmPassword: "",
+});
 
   setAuthSuccess("Accesso effettuato.");
 };
@@ -1330,12 +1332,14 @@ if (profileError) {
     });
   }
 
-  setAuthForm({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  });
+setAuthForm({
+  name: "",
+  surname: "",
+  birthDate: "",
+  email: "",
+  password: "",
+  confirmPassword: "",
+});
 };
 
   const handleForgotPassword = () => {
