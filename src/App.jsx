@@ -1553,10 +1553,10 @@ export default function App() {
       .insert([jobToInsert])
       .select()
       .single();
-
-    if (error) {
-      console.error(error);
-      alert("Errore inserimento");
+if (error) {
+  console.error("Errore Supabase completo:", error);
+alert(`Errore inserimento: ${error.message}`);
+}
     } else {
       alert("Offerta aggiunta");
       setOffers((prev) => [data, ...prev]);
