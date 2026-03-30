@@ -383,6 +383,11 @@ function OfferCard({ offer, saved, onSave, onApply, onGoCV }) {
               {offer.zone ? `, ${offer.zone}` : ""}
             </span>
           </div>
+          {offer.description ? (
+            <p className="meta-text small" style={{ marginTop: 8 }}>
+              {offer.description}
+            </p>
+          ) : null}
         </div>
 
         <div className="right-stack">
@@ -397,6 +402,7 @@ function OfferCard({ offer, saved, onSave, onApply, onGoCV }) {
         <Badge>{offer.remote}</Badge>
         <Badge>{offer.distance} km</Badge>
         <Badge>{offer.region}</Badge>
+        <Badge>{offer.category}</Badge>
       </div>
 
       <div className="actions">
@@ -623,14 +629,25 @@ export default function App() {
   const [activeConversationId, setActiveConversationId] = useState(() =>
     readStorage(STORAGE_KEYS.activeConversationId, defaultRecruiterMessages[0]?.id || null)
   );
-  const [showAddJobForm, setShowAddJobForm] = useState(false)
 
-const [newJob, setNewJob] = useState({
-  title: "",
-  company: "",
-  comune: "",
-  salary: ""
-})
+  const [showAddJobForm, setShowAddJobForm] = useState(false);
+  const [newJob, setNewJob] = useState({
+    title: "",
+    company: "",
+    region: "Lombardia",
+    province: "Milano",
+    comune: "Milano",
+    zone: "",
+    contract: "Tempo indeterminato",
+    remote: "On-site",
+    salary: "",
+    distance: "0",
+    category: "Generale",
+    urgent: false,
+    description: "",
+    requirements: "",
+  });
+
   const [autoApplySettings, setAutoApplySettings] = useState(() =>
     readStorage(STORAGE_KEYS.autoApplySettings, defaultAutoApplySettings)
   );
@@ -804,30 +821,109 @@ const [newJob, setNewJob] = useState({
     return ["all", ...zones];
   }, [autoApplySettings.region, autoApplySettings.province, autoApplySettings.comune]);
 
-  const normalizedOffers = useMemo(() => {
-    return offers.map((o, index) => ({
-      id: o.id || `job-${index}`,
-      title: o.title || "Titolo non disponibile",
-      company: o.company || "Azienda non disponibile",
-      region: o.region || "Lombardia",
-      province: o.province || "Milano",
-      comune: o.comune || "Milano",
-      zone: o.zone || "",
-      distance: typeof o.distance === "number" ? o.distance : Number(o.distance || 0),
-      contract: o.contract || "N/D",
-      salary: o.salary || "N/D",
-      remote: o.remote || "On-site",
-      category: o.category || "Generale",
-      match: typeof o.match === "number" ? o.match : Number(o.match || 0),
-      urgent: Boolean(o.urgent),
+  const addJobProvinceOptions = useMemo(() => {
+    return Object.keys(locationData[newJob.region] || {}).map((p) => ({
+      value: p,
+      label: p,
     }));
-  }, [offers]);
+  }, [newJob.region]);
+
+  const addJobComuneOptions = useMemo(() => {
+    return Object.keys(locationData[newJob.region]?.[newJob.province] || {}).map((c) => ({
+      value: c,
+      label: c,
+    }));
+  }, [newJob.region, newJob.province]);
+
+  const addJobZoneOptions = useMemo(() => {
+    return (locationData[newJob.region]?.[newJob.province]?.[newJob.comune] || []).map((z) => ({
+      value: z,
+      label: z,
+    }));
+  }, [newJob.region, newJob.province, newJob.comune]);
+
+  const computeMatchFromCV = (job, cv) => {
+    const jobText = [
+      job.title,
+      job.company,
+      job.category,
+      job.contract,
+      job.remote,
+      job.description,
+      job.requirements,
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    const profileText = [
+      cv.ruolo,
+      cv.profilo,
+      ...(cv.competenze || []),
+      ...(cv.esperienze || []).flatMap((exp) => [
+        exp.ruolo || "",
+        exp.azienda || "",
+        exp.descrizione || "",
+      ]),
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    let score = 35;
+
+    const titleWords = (job.title || "")
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((w) => w.length > 2);
+
+    const matchedTitleWords = titleWords.filter((word) => profileText.includes(word)).length;
+    score += Math.min(matchedTitleWords * 8, 24);
+
+    const matchedSkills = (cv.competenze || []).filter((skill) =>
+      jobText.includes(String(skill).toLowerCase())
+    ).length;
+    score += Math.min(matchedSkills * 6, 24);
+
+    if ((cv.ruolo || "").toLowerCase() && jobText.includes((cv.ruolo || "").toLowerCase())) {
+      score += 10;
+    }
+
+    if ((job.remote || "") === "Remoto") score += 3;
+    if ((job.remote || "") === "Ibrido") score += 2;
+
+    return Math.max(0, Math.min(99, score));
+  };
+
+  const buildOfferFromDb = (o, index = 0) => ({
+    id: o.id || `job-${index}`,
+    title: o.title || "Titolo non disponibile",
+    company: o.company || "Azienda non disponibile",
+    region: o.region || "Lombardia",
+    province: o.province || "Milano",
+    comune: o.comune || "Milano",
+    zone: o.zone || "",
+    distance: typeof o.distance === "number" ? o.distance : Number(o.distance || 0),
+    contract: o.contract || "N/D",
+    salary: o.salary || "N/D",
+    remote: o.remote || "On-site",
+    category: o.category || "Generale",
+    match:
+      typeof o.match === "number"
+        ? o.match
+        : Number(o.match || computeMatchFromCV(o, cvData)),
+    urgent: Boolean(o.urgent),
+    description: o.description || "",
+    requirements: o.requirements || "",
+  });
+
+  const normalizedOffers = useMemo(() => {
+    return offers.map((o, index) => buildOfferFromDb(o, index));
+  }, [offers, cvData]);
 
   const filteredOffers = useMemo(() => {
     return normalizedOffers.filter((o) => {
       const okSearch =
         !search ||
-        [o.title, o.company, o.region, o.province, o.comune, o.zone, o.category]
+        [o.title, o.company, o.region, o.province, o.comune, o.zone, o.category, o.description, o.requirements]
           .join(" ")
           .toLowerCase()
           .includes(search.toLowerCase());
@@ -979,7 +1075,7 @@ const [newJob, setNewJob] = useState({
   const handleGoCV = (offer) => {
     setCvData((prev) => ({
       ...prev,
-      jobDescription: `${offer.title} presso ${offer.company}. Regione ${offer.region}, provincia ${offer.province}, comune ${offer.comune}${offer.zone ? `, zona ${offer.zone}` : ""}. Contratto ${offer.contract}. Modalità ${offer.remote}.`,
+      jobDescription: `${offer.title} presso ${offer.company}. Regione ${offer.region}, provincia ${offer.province}, comune ${offer.comune}${offer.zone ? `, zona ${offer.zone}` : ""}. Contratto ${offer.contract}. Modalità ${offer.remote}. Descrizione: ${offer.description || ""} Requisiti: ${offer.requirements || ""}`,
     }));
     setTab("cv");
     setCvSection("match");
@@ -1440,6 +1536,50 @@ const [newJob, setNewJob] = useState({
     pulseSave(`${limited.length} candidature inviate da Auto Apply AI`);
   };
 
+  const addJob = async () => {
+    if (!newJob.title || !newJob.company) {
+      alert("Compila almeno titolo e azienda");
+      return;
+    }
+
+    const jobToInsert = {
+      ...newJob,
+      distance: Number(newJob.distance || 0),
+      match: computeMatchFromCV(newJob, cvData),
+    };
+
+    const { data, error } = await supabase
+      .from("jobs")
+      .insert([jobToInsert])
+      .select()
+      .single();
+
+    if (error) {
+      console.error(error);
+      alert("Errore inserimento");
+    } else {
+      alert("Offerta aggiunta");
+      setOffers((prev) => [data, ...prev]);
+      setNewJob({
+        title: "",
+        company: "",
+        region: "Lombardia",
+        province: "Milano",
+        comune: "Milano",
+        zone: "",
+        contract: "Tempo indeterminato",
+        remote: "On-site",
+        salary: "",
+        distance: "0",
+        category: "Generale",
+        urgent: false,
+        description: "",
+        requirements: "",
+      });
+      setShowAddJobForm(false);
+    }
+  };
+
   if (!authSession.isAuthenticated) {
     return (
       <AuthScreen
@@ -1459,30 +1599,7 @@ const [newJob, setNewJob] = useState({
       />
     );
   }
-const addJob = async () => {
-  if (!newJob.title || !newJob.company) {
-    alert("Compila almeno titolo e azienda")
-    return
-  }
 
-  const { data, error } = await supabase
-    .from("jobs")
-    .insert([newJob])
-
-  if (error) {
-    console.error(error)
-    alert("Errore inserimento")
-  } else {
-    alert("Offerta aggiunta")
-    setOffers(prev => [...prev, newJob])
-    setNewJob({
-      title: "",
-      company: "",
-      comune: "",
-      salary: ""
-    })
-  }
-}
   return (
     <div className={`app-shell ${theme === "dark" ? "theme-dark" : "theme-light"}`}>
       <div className="main-container">
@@ -1636,57 +1753,7 @@ const addJob = async () => {
             </button>
           </div>
         </div>
-{showAddJobForm && (
-  <div className="inner-box" style={{ marginBottom: 20 }}>
-    <h3>Aggiungi nuova offerta</h3>
 
-    <input
-      type="text"
-      placeholder="Titolo"
-      value={newJob.title}
-      onChange={(e) => setNewJob({ ...newJob, title: e.target.value })}
-      style={{ display: "block", marginBottom: 10, width: "100%" }}
-    />
-
-    <input
-      type="text"
-      placeholder="Azienda"
-      value={newJob.company}
-      onChange={(e) => setNewJob({ ...newJob, company: e.target.value })}
-      style={{ display: "block", marginBottom: 10, width: "100%" }}
-    />
-
-    <input
-      type="text"
-      placeholder="Comune"
-      value={newJob.comune}
-      onChange={(e) => setNewJob({ ...newJob, comune: e.target.value })}
-      style={{ display: "block", marginBottom: 10, width: "100%" }}
-    />
-
-    <input
-      type="text"
-      placeholder="Stipendio"
-      value={newJob.salary}
-      onChange={(e) => setNewJob({ ...newJob, salary: e.target.value })}
-      style={{ display: "block", marginBottom: 10, width: "100%" }}
-    />
-
-    <button
-      onClick={addJob}
-      style={{
-        background: "#22c55e",
-        color: "white",
-        padding: "10px 16px",
-        borderRadius: "8px",
-        border: "none",
-        cursor: "pointer"
-      }}
-    >
-      Salva offerta
-    </button>
-  </div>
-)}
         {saveFeedback ? (
           <div style={{ padding: "0 28px 10px" }}>
             <div className="inner-box">
@@ -1703,24 +1770,186 @@ const addJob = async () => {
                   <h2>Offerte consigliate</h2>
                   <p>Ricerca nazionale con filtro per regione, provincia, comune e zona</p>
                 </div>
+
                 <div style={{ marginBottom: 20 }}>
-  <button
-    type="button"
-onClick={() => setShowAddJobForm((prev) => !prev)}
-    style={{
-      background: "#ff6b3d",
-      color: "white",
-      padding: "10px 16px",
-      borderRadius: "8px",
-      border: "none",
-      cursor: "pointer"
-    }}
-  >
-    {showAddJobForm ? "Chiudi form" : "+ Aggiungi offerta"}
-  </button>
-</div>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddJobForm((prev) => !prev)}
+                    style={{
+                      background: "#ff6b3d",
+                      color: "white",
+                      padding: "10px 16px",
+                      borderRadius: "8px",
+                      border: "none",
+                      cursor: "pointer"
+                    }}
+                  >
+                    {showAddJobForm ? "Chiudi form" : "+ Aggiungi offerta"}
+                  </button>
+                </div>
+
                 <div className="muted">{offersLoading ? "..." : filteredOffers.length} risultati</div>
               </div>
+
+              {showAddJobForm && (
+                <div className="inner-box" style={{ marginBottom: 20 }}>
+                  <h3>Aggiungi nuova offerta</h3>
+
+                  <div className="stack">
+                    <Input
+                      value={newJob.title}
+                      onChange={(e) => setNewJob({ ...newJob, title: e.target.value })}
+                      placeholder="Titolo"
+                    />
+
+                    <Input
+                      value={newJob.company}
+                      onChange={(e) => setNewJob({ ...newJob, company: e.target.value })}
+                      placeholder="Azienda"
+                    />
+
+                    <div className="filters-grid">
+                      <SelectField
+                        value={newJob.region}
+                        onChange={(value) =>
+                          setNewJob({
+                            ...newJob,
+                            region: value,
+                            province: Object.keys(locationData[value] || {})[0] || "",
+                            comune:
+                              Object.keys(
+                                locationData[value]?.[Object.keys(locationData[value] || {})[0]] || {}
+                              )[0] || "",
+                            zone: "",
+                          })
+                        }
+                        options={regionOptions
+                          .filter((r) => r !== "all")
+                          .map((r) => ({ value: r, label: r }))}
+                      />
+
+                      <SelectField
+                        value={newJob.province}
+                        onChange={(value) =>
+                          setNewJob({
+                            ...newJob,
+                            province: value,
+                            comune: Object.keys(locationData[newJob.region]?.[value] || {})[0] || "",
+                            zone: "",
+                          })
+                        }
+                        options={addJobProvinceOptions}
+                      />
+
+                      <SelectField
+                        value={newJob.comune}
+                        onChange={(value) =>
+                          setNewJob({
+                            ...newJob,
+                            comune: value,
+                            zone: "",
+                          })
+                        }
+                        options={addJobComuneOptions}
+                      />
+
+                      <SelectField
+                        value={newJob.zone}
+                        onChange={(value) => setNewJob({ ...newJob, zone: value })}
+                        options={[
+                          { value: "", label: "Nessuna zona" },
+                          ...addJobZoneOptions,
+                        ]}
+                      />
+                    </div>
+
+                    <div className="filters-grid">
+                      <SelectField
+                        value={newJob.contract}
+                        onChange={(value) => setNewJob({ ...newJob, contract: value })}
+                        options={[
+                          { value: "Tempo indeterminato", label: "Tempo indeterminato" },
+                          { value: "Tempo determinato", label: "Tempo determinato" },
+                          { value: "Somministrazione", label: "Somministrazione" },
+                        ]}
+                      />
+
+                      <SelectField
+                        value={newJob.remote}
+                        onChange={(value) => setNewJob({ ...newJob, remote: value })}
+                        options={[
+                          { value: "On-site", label: "On-site" },
+                          { value: "Ibrido", label: "Ibrido" },
+                          { value: "Remoto", label: "Remoto" },
+                        ]}
+                      />
+
+                      <SelectField
+                        value={newJob.category}
+                        onChange={(value) => setNewJob({ ...newJob, category: value })}
+                        options={[
+                          { value: "Generale", label: "Generale" },
+                          { value: "Amministrazione", label: "Amministrazione" },
+                          { value: "Customer Service", label: "Customer Service" },
+                          { value: "Logistica", label: "Logistica" },
+                          { value: "IT", label: "IT" },
+                        ]}
+                      />
+
+                      <Input
+                        value={newJob.distance}
+                        onChange={(e) => setNewJob({ ...newJob, distance: e.target.value })}
+                        placeholder="Distanza km"
+                        type="number"
+                      />
+                    </div>
+
+                    <Input
+                      value={newJob.salary}
+                      onChange={(e) => setNewJob({ ...newJob, salary: e.target.value })}
+                      placeholder="Stipendio es. 28K-32K"
+                    />
+
+                    <Textarea
+                      value={newJob.description}
+                      onChange={(e) => setNewJob({ ...newJob, description: e.target.value })}
+                      placeholder="Descrizione offerta"
+                    />
+
+                    <Textarea
+                      value={newJob.requirements}
+                      onChange={(e) => setNewJob({ ...newJob, requirements: e.target.value })}
+                      placeholder="Requisiti richiesti"
+                    />
+
+                    <div className="actions">
+                      <label className="meta-text small" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <input
+                          type="checkbox"
+                          checked={newJob.urgent}
+                          onChange={(e) => setNewJob({ ...newJob, urgent: e.target.checked })}
+                        />
+                        Offerta urgente
+                      </label>
+
+                      <Badge>
+                        Match stimato: {computeMatchFromCV(newJob, cvData)}%
+                      </Badge>
+                    </div>
+
+                    <div className="actions">
+                      <Button className="btn-red" onClick={addJob}>
+                        <Save size={16} />
+                        Salva offerta
+                      </Button>
+
+                      <Button className="btn-dark" onClick={() => setShowAddJobForm(false)}>
+                        Chiudi
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {offersLoading ? (
                 <div className="inner-box">Caricamento offerte...</div>
