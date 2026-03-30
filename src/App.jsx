@@ -623,6 +623,14 @@ export default function App() {
   const [activeConversationId, setActiveConversationId] = useState(() =>
     readStorage(STORAGE_KEYS.activeConversationId, defaultRecruiterMessages[0]?.id || null)
   );
+  const [showAddJobForm, setShowAddJobForm] = useState(false)
+
+const [newJob, setNewJob] = useState({
+  title: "",
+  company: "",
+  comune: "",
+  salary: ""
+})
   const [autoApplySettings, setAutoApplySettings] = useState(() =>
     readStorage(STORAGE_KEYS.autoApplySettings, defaultAutoApplySettings)
   );
@@ -1451,7 +1459,29 @@ export default function App() {
       />
     );
   }
+const addJob = async () => {
+  if (!newJob.title || !newJob.company) {
+    alert("Compila almeno titolo e azienda")
+    return
+  }
 
+  const { data, error } = await supabase
+    .from("jobs")
+    .insert([newJob])
+
+  if (error) {
+    console.error(error)
+    alert("Errore inserimento")
+  } else {
+    alert("Offerta aggiunta")
+    setNewJob({
+      title: "",
+      company: "",
+      comune: "",
+      salary: ""
+    })
+  }
+}
   return (
     <div className={`app-shell ${theme === "dark" ? "theme-dark" : "theme-light"}`}>
       <div className="main-container">
@@ -1622,6 +1652,20 @@ export default function App() {
                   <h2>Offerte consigliate</h2>
                   <p>Ricerca nazionale con filtro per regione, provincia, comune e zona</p>
                 </div>
+                <div style={{ marginBottom: 20 }}>
+  <button
+    style={{
+      background: "#ff6b3d",
+      color: "white",
+      padding: "10px 16px",
+      borderRadius: "8px",
+      border: "none",
+      cursor: "pointer"
+    }}
+  >
+    {showAddJobForm ? "Chiudi form" : "+ Aggiungi offerta"}
+  </button>
+</div>
                 <div className="muted">{offersLoading ? "..." : filteredOffers.length} risultati</div>
               </div>
 
