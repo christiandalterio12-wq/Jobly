@@ -246,8 +246,24 @@ const defaultCvData = {
   profilo: "",
   competenze: [],
   newSkill: "",
-  esperienze: [],
-  formazione: [],
+  esperienze: [
+    {
+      id: 1,
+      ruolo: "",
+      azienda: "",
+      periodo: "",
+      descrizione: "",
+    },
+  ],
+  formazione: [
+    {
+      id: 1,
+      titolo: "",
+      istituto: "",
+      periodo: "",
+      descrizione: "",
+    },
+  ],
   jobDescription: "",
   coverLetter: "",
 };
