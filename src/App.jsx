@@ -1299,12 +1299,18 @@ export default function App() {
     });
     pulseSave("Modalità demo attiva");
   };
+const handleLogout = async () => {
+  await supabase.auth.signOut();
 
-  const handleLogout = () => {
-    setAuthSession(defaultAuthSession);
-    setAuthMode("login");
-    setAuthError("");
-    setAuthSuccess("");
+  setAuthSession({
+    isAuthenticated: false,
+    email: "",
+    name: "",
+    isDemo: false,
+  });
+
+  setAuthMode("login");
+};
   };
 
   const openCVSection = (section) => {
