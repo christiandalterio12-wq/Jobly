@@ -751,7 +751,12 @@ export default function App() {
   const [tab, setTab] = useState(() => readStorage(STORAGE_KEYS.activeTab, "offerte"));
   const [cvSection, setCvSection] = useState(() => readStorage(STORAGE_KEYS.activeCvSection, "dashboard"));
 
-  const [profile, setProfile] = useState(() => readStorage(STORAGE_KEYS.profile, defaultProfile));
+  const [profile, setProfile] = useState(() =>
+  readStorage(
+    getUserKey(STORAGE_KEYS.profile, defaultAuthSession.email),
+    defaultProfile
+  )
+);
   const [offers, setOffers] = useState([]);
   const [offersLoading, setOffersLoading] = useState(true);
   const [offersError, setOffersError] = useState("");
@@ -761,7 +766,12 @@ export default function App() {
   const [authSession, setAuthSession] = useState(() => readStorage(STORAGE_KEYS.authSession, defaultAuthSession));
   useSupabaseSession(setAuthSession);
   const [chat, setChat] = useState(() => readStorage(STORAGE_KEYS.chat, defaultChat));
-  const [cvData, setCvData] = useState(() => readStorage(STORAGE_KEYS.cvData, defaultCvData));
+ const [cvData, setCvData] = useState(() =>
+  readStorage(
+    getUserKey(STORAGE_KEYS.cvData, defaultAuthSession.email),
+    defaultCvData
+  )
+);
   const [savedCVs, setSavedCVs] = useState(() => readStorage(STORAGE_KEYS.savedCVs, defaultSavedCVs));
   const [recruiterMessages, setRecruiterMessages] = useState(() =>
     readStorage(STORAGE_KEYS.recruiterMessages, defaultRecruiterMessages)
