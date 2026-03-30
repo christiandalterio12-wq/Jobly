@@ -301,7 +301,7 @@ const defaultRecruiterMessages = [
   },
 ];
 
-const defaultSavedCVs = [
+const defaultNotifications = [];
   {
     id: 1,
     name: "CV_Christian.pdf",
