@@ -775,10 +775,20 @@ export default function App() {
 
   setProfile(userProfile);
 }, [authSession]);
+  useEffect(() => {
+  if (!authSession?.email) return;
+
+  const userCvData = readStorage(
+    getUserKey(STORAGE_KEYS.cvData, authSession.email),
+    defaultCvData
+  );
+
+  setCvData(userCvData);
+}, [authSession]);
   const [chat, setChat] = useState(() => readStorage(STORAGE_KEYS.chat, defaultChat));
- const [cvData, setCvData] = useState(() =>
+const [cvData, setCvData] = useState(() =>
   readStorage(
-    getUserKey(STORAGE_KEYS.cvData, defaultAuthSession.email),
+    getUserKey(STORAGE_KEYS.cvData, defaultAuthSession?.email || ""),
     defaultCvData
   )
 );
