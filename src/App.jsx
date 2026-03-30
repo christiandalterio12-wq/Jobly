@@ -1230,7 +1230,7 @@ const [authForm, setAuthForm] = useState({
     pulseSave("Messaggio inviato");
   };
 
-  const syncUserIntoProfile = (user) => {
+const syncUserIntoProfile = async (user) => {
   setProfile((prev) => ({
     ...prev,
     name: user.name || prev.name,
@@ -1238,6 +1238,15 @@ const [authForm, setAuthForm] = useState({
     birthDate: user.birthDate || prev.birthDate,
     email: user.email || prev.email,
   }));
+
+  await supabase
+    .from("profiles")
+    .upsert({
+      email: user.email,
+      name: user.name,
+      surname: user.surname,
+      birthDate: user.birthDate,
+    });
 };
 
 const handleLogin = async () => {
