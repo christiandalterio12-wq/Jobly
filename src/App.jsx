@@ -1704,6 +1704,8 @@ const addJob = async () => {
                 </div>
                 <div style={{ marginBottom: 20 }}>
   <button
+    type="button"
+onClick={() => setShowAddJobForm((prev) => !prev)}
     style={{
       background: "#ff6b3d",
       color: "white",
