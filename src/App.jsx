@@ -245,16 +245,7 @@ const defaultProfile = {
   cvName: "",
 };
 
-const defaultApplications = [
-  {
-    id: 101,
-    offerId: "seed-2",
-    title: "Customer Care Specialist",
-    company: "Randstad",
-    status: "Inviata",
-    date: "Oggi",
-  },
-];
+const defaultApplications = [];
 const defaultRecruiterMessages = [];
 const defaultNotifications = [];
 
