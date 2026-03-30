@@ -772,12 +772,14 @@ export default function App() {
   const [authShowPassword, setAuthShowPassword] = useState(false);
   const [authError, setAuthError] = useState("");
   const [authSuccess, setAuthSuccess] = useState("");
-  const [authForm, setAuthForm] = useState({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  });
+const [authForm, setAuthForm] = useState({
+  name: "",
+  surname: "",
+  birthDate: "",
+  email: "",
+  password: "",
+  confirmPassword: "",
+});
 
   const showToast = (message, type = "success", duration = 3000) => {
     setToast({ message, type });
