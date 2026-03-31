@@ -2429,6 +2429,17 @@ const handleLogout = async () => {
     reader.readAsDataURL(file);
   }}
 />
+                  }}
+/>
+
+{cvData?.file && (
+  <div style={{ marginTop: "10px" }}>
+    <p>📄 {cvData.fileName}</p>
+    <a href={cvData.file} target="_blank">
+      Apri CV
+    </a>
+  </div>
+)}
                   <Button className="btn-red" onClick={saveProfile}>
                     <Save size={16} />
                     Salva profilo
