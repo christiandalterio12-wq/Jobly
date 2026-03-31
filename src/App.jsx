@@ -714,14 +714,18 @@ const [savedCVs, setSavedCVs] = useState(() =>
     defaultSavedCVs
   )
 );
-  const [savedCVs, setSavedCVs] = useState(() => readStorage(STORAGE_KEYS.savedCVs, defaultSavedCVs));
   const [recruiterMessages, setRecruiterMessages] = useState(() =>
-    readStorage(STORAGE_KEYS.recruiterMessages, defaultRecruiterMessages)
-  );
+  readStorage(
+    getUserKey(STORAGE_KEYS.recruiterMessages, defaultAuthSession?.email || ""),
+    defaultRecruiterMessages
+  )
+);
   const [activeConversationId, setActiveConversationId] = useState(() =>
-    readStorage(STORAGE_KEYS.activeConversationId, defaultRecruiterMessages[0]?.id || null)
-  );
-
+  readStorage(
+    getUserKey(STORAGE_KEYS.activeConversationId, defaultAuthSession?.email || ""),
+    defaultRecruiterMessages[0]?.id || null
+  )
+);
   const [showAddJobForm, setShowAddJobForm] = useState(false);
   const [newJob, setNewJob] = useState(createEmptyJob());
   const [jobErrors, setJobErrors] = useState({});
