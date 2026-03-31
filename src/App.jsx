@@ -2410,7 +2410,25 @@ const handleLogout = async () => {
                   <Input value={profile.city} onChange={(e) => setProfile({ ...profile, city: e.target.value })} placeholder="Città" />
                   <Textarea value={profile.bio} onChange={(e) => setProfile({ ...profile, bio: e.target.value })} placeholder="Bio" />
                   <Textarea value={profile.skills} onChange={(e) => setProfile({ ...profile, skills: e.target.value })} placeholder="Competenze" />
-                  <Input value={profile.cvName} onChange={(e) => setProfile({ ...profile, cvName: e.target.value })} placeholder="Nome CV" />
+                 <input
+  type="file"
+  accept=".pdf"
+  onChange={(e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result;
+      setCvData((prev) => ({
+        ...prev,
+        file: base64,
+        fileName: file.name,
+      }));
+    };
+    reader.readAsDataURL(file);
+  }}
+/>
                   <Button className="btn-red" onClick={saveProfile}>
                     <Save size={16} />
                     Salva profilo
