@@ -708,6 +708,12 @@ export default function App() {
   setCvData(userCvData);
 }, [authSession]);
   const [chat, setChat] = useState(() => readStorage(STORAGE_KEYS.chat, defaultChat));
+  const [cvData, setCvData] = useState(() =>
+  readStorage(
+    getUserKey(STORAGE_KEYS.cvData, defaultAuthSession?.email || ""),
+    defaultCvData
+  )
+);
 const [savedCVs, setSavedCVs] = useState(() =>
   readStorage(
     getUserKey(STORAGE_KEYS.savedCVs, defaultAuthSession?.email || ""),
