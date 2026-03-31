@@ -2410,36 +2410,68 @@ const handleLogout = async () => {
                   <Input value={profile.city} onChange={(e) => setProfile({ ...profile, city: e.target.value })} placeholder="Città" />
                   <Textarea value={profile.bio} onChange={(e) => setProfile({ ...profile, bio: e.target.value })} placeholder="Bio" />
                   <Textarea value={profile.skills} onChange={(e) => setProfile({ ...profile, skills: e.target.value })} placeholder="Competenze" />
-                 <input
-  type="file"
-  accept=".pdf"
-  onChange={(e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+   <div className="cv-upload-wrap">
+  <label className="cv-upload-label">CV (PDF)</label>
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = reader.result;
-      setCvData((prev) => ({
-        ...prev,
-        file: base64,
-        fileName: file.name,
-      }));
-    };
-    reader.readAsDataURL(file);
-  }}
-/>
-                  }}
-/>
+  <input
+    id="cv-upload"
+    type="file"
+    accept=".pdf"
+    style={{ display: "none" }}
+    onChange={(e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
 
-{cvData?.file && (
-  <div style={{ marginTop: "10px" }}>
-    <p>📄 {cvData.fileName}</p>
-    <a href={cvData.file} target="_blank">
-      Apri CV
-    </a>
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result;
+        setCvData((prev) => ({
+          ...prev,
+          file: base64,
+          fileName: file.name,
+        }));
+      };
+      reader.readAsDataURL(file);
+    }}
+  />
+
+  <div className="cv-upload-row">
+    <label htmlFor="cv-upload" className="cv-upload-btn">
+      {cvData?.file ? "Sostituisci CV" : "Carica CV"}
+    </label>
+
+    <span className="cv-upload-name">
+      {cvData?.fileName || "Nessun file selezionato"}
+    </span>
   </div>
-)}
+
+  {cvData?.file && (
+    <div className="cv-upload-actions">
+      <a
+        href={cvData.file}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="cv-link"
+      >
+        Apri CV
+      </a>
+
+      <button
+        type="button"
+        className="cv-remove-btn"
+        onClick={() =>
+          setCvData((prev) => ({
+            ...prev,
+            file: "",
+            fileName: "",
+          }))
+        }
+      >
+        Rimuovi
+      </button>
+    </div>
+  )}
+</div>
                   <Button className="btn-red" onClick={saveProfile}>
                     <Save size={16} />
                     Salva profilo
