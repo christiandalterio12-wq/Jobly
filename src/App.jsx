@@ -1308,6 +1308,26 @@ if (profileError) {
     },
   },
 });
+   if (!error) {
+  const cleanCv = {
+  ...defaultCvData,
+  nome: authForm.name,
+  cognome: authForm.surname,
+  email: email,
+  telefono: "",
+  citta: "",
+  ruolo: "",
+  profilo: "",
+  competenze: [],
+  esperienze: [],
+  formazione: [],
+};
+
+localStorage.setItem(
+  getUserKey(STORAGE_KEYS.cvData, email),
+  JSON.stringify(cleanCv)
+);
+}
 
   if (error) {
     setAuthError(error.message);
